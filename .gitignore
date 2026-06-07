@@ -1,0 +1,16 @@
+# Gradle
+.gradle/
+build/
+
+# Android build outputs
+*/build/
+captures/
+
+# Local IDE state
+.idea/
+
+# Local machine files
+local.properties
+kls_database.db
+.DS_Store
+.kotlin/

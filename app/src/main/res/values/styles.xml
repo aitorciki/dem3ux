@@ -1,0 +1,3 @@
+<resources>
+    <style name="Theme.Dem3ux" parent="android:style/Theme.Material.Light.NoActionBar" />
+</resources>
