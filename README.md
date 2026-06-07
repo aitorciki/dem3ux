@@ -61,6 +61,30 @@ The intended Android stack is:
 
 Room is preferred over DataStore because dem3ux has database-shaped state: playlists, entries, selected entries, timestamps, and likely future emulator-specific compatibility data. DataStore is better suited to simple key/value preferences.
 
+## Development Checks
+
+Run the full local verification task with:
+
+```bash
+./gradlew verify
+```
+
+This runs formatting checks, Android Lint, and unit tests.
+
+To format Kotlin and Gradle Kotlin files:
+
+```bash
+./gradlew spotlessApply
+```
+
+The repository includes a pre-commit hook in `.githooks/pre-commit`. Enable it for a local clone with:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The hook runs `./gradlew verify` before each commit.
+
 ## Storage Model
 
 The initial persisted model should be small:
