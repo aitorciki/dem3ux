@@ -55,12 +55,21 @@ object M3uParser {
 
         path.split("/").forEach { segment ->
             when {
-                segment.isEmpty() || segment == "." -> Unit
+                segment.isEmpty() || segment == "." -> {
+                    return@forEach
+                }
+
                 segment == ".." && normalizedSegments.isNotEmpty() && normalizedSegments.last() != ".." -> {
                     normalizedSegments.removeLast()
                 }
-                segment == ".." && !isAbsolute -> normalizedSegments.addLast(segment)
-                segment != ".." -> normalizedSegments.addLast(segment)
+
+                segment == ".." && !isAbsolute -> {
+                    normalizedSegments.addLast(segment)
+                }
+
+                segment != ".." -> {
+                    normalizedSegments.addLast(segment)
+                }
             }
         }
 

@@ -175,7 +175,7 @@ This proposed `es_find_rules.xml` entry lets ES-DE resolve dem3ux as an Android 
 This proposed `es_systems.xml` command is intentionally experimental. It defines the bridge contract dem3ux should initially implement and may need adjustment after on-device testing.
 
 ```xml
-<command label="DuckStation via dem3ux">%EMULATOR_DEM3UX% %ACTION%=android.intent.action.VIEW %EXTRA_dem3ux.target.package%=com.github.stenzek.duckstation %EXTRA_dem3ux.target.activity%=com.github.stenzek.duckstation.EmulationActivity %EXTRA_dem3ux.target.name%=DUCKSTATION %EXTRA_dem3ux.input.path%=%ROM% %EXTRA_dem3ux.input.saf%=%ROMSAF% %EXTRA_dem3ux.output.mode%=saf</command>
+<command label="DuckStation via dem3ux">%EMULATOR_DEM3UX% %ACTION%=android.intent.action.VIEW %EXTRA_dem3ux.target.activity%=com.github.stenzek.duckstation/.EmulationActivity %EXTRA_dem3ux.input.path%=%ROMSAF% %EXTRABOOL_dem3ux.target.extra.resumeState%=false %EXTRA_dem3ux.target.extra.bootPath%=%ROMSAF% %EXTRABOOL_dem3ux.target.flag.clearTask%=true %EXTRABOOL_dem3ux.target.flag.clearTop%=true</command>
 ```
 
 The known ES-DE DuckStation activity rule is:
@@ -194,12 +194,15 @@ The first compatibility milestone is for dem3ux to reproduce a working DuckStati
 
 The initial dem3ux bridge activity should accept these extras:
 
-- `dem3ux.target.package`: target emulator package name.
-- `dem3ux.target.activity`: target emulator activity class name.
-- `dem3ux.target.name`: human-readable or profile key for compatibility handling.
-- `dem3ux.input.path`: frontend-provided `.m3u` absolute path, when available.
-- `dem3ux.input.saf`: frontend-provided `.m3u` SAF URI, when available.
-- `dem3ux.output.mode`: preferred output path mode, such as `absolute`, `saf`, or `provider`.
+- `dem3ux.target.activity`: target emulator activity as a flattened Android component string, such as `com.github.stenzek.duckstation/.EmulationActivity`.
+- `dem3ux.input.path`: frontend-provided `.m3u` path or URI.
+- `dem3ux.target.action`: optional target emulator intent action.
+- `dem3ux.target.extra.*`: target emulator extras to forward after stripping the prefix.
+- `dem3ux.target.flag.clearTask`: forwards `Intent.FLAG_ACTIVITY_CLEAR_TASK` when true.
+- `dem3ux.target.flag.clearTop`: forwards `Intent.FLAG_ACTIVITY_CLEAR_TOP` when true.
+- `dem3ux.target.flag.noHistory`: forwards `Intent.FLAG_ACTIVITY_NO_HISTORY` when true.
+
+If a forwarded target extra value equals `dem3ux.input.path`, dem3ux replaces that value with the selected playlist entry before launching the emulator. This lets frontend commands mirror emulator-specific launch shapes such as DuckStation's `bootPath` extra while dem3ux swaps the `.m3u` for the selected disc image.
 
 These names are not stable API yet. They document the first integration contract to build and test.
 
