@@ -1,6 +1,6 @@
 # dem3ux
 
-dem3ux is an Android m3u demuxer for emulator launch workflows.
+dem3ux is an Android m3u demuxer and emulator launch bridge.
 
 Its goal is to bridge launcher/frontends that request launching an `.m3u` playlist with emulators that do not directly support `.m3u` files and instead expect a concrete game image path.
 
@@ -12,7 +12,7 @@ Some emulator frontends launch games by passing the selected ROM path to an Andr
 
 Some emulators support `.m3u` directly. Others, such as DuckStation on Android, may need the frontend to pass a specific disc/image path instead.
 
-dem3ux sits between the frontend and the emulator:
+dem3ux sits between the frontend and the emulator. For playlist inputs:
 
 1. The frontend launches dem3ux with an `.m3u` path and target emulator information.
 2. dem3ux parses the `.m3u` file.
@@ -20,18 +20,21 @@ dem3ux sits between the frontend and the emulator:
 4. dem3ux converts that selected entry into the path/URI form expected by the target emulator.
 5. dem3ux launches the target emulator activity.
 
+For direct game/image inputs that are not `.m3u` or `.m3u8` playlists, dem3ux skips parsing and proxies the original path/URI to the target emulator unchanged. This supports frontends such as ES-DE that route an entire system directory through one Android launch command, regardless of individual file extension.
+
 ## Main Features
 
 ### Bridge Launch Mode
 
 When launched by a frontend, dem3ux acts as a bridge:
 
-- Accept an `.m3u` path from the frontend.
+- Accept a ROM path or URI from the frontend.
 - Accept target emulator launch metadata.
-- Parse playlist entries.
-- Resolve relative entries against the `.m3u` location.
+- If the input is an `.m3u` or `.m3u8`, parse playlist entries.
+- Resolve relative playlist entries against the `.m3u` location.
 - Select the last-used entry for that playlist, or the first entry if no selection exists.
-- Launch the target emulator with the selected entry instead of the original `.m3u`.
+- If the input is not a playlist, proxy the original path/URI unchanged.
+- Launch the target emulator with the selected entry or proxied direct input.
 
 ### App UI Mode
 
@@ -41,6 +44,7 @@ When launched as a regular Android app, dem3ux provides a small management UI:
 - Show the entries for each playlist.
 - Let the user change the selected/default entry.
 - Persist the selected entry so future bridge launches use it by default.
+- Leave direct non-playlist launches out of the playlist database.
 
 ## Android Package
 
@@ -126,7 +130,7 @@ dem3ux should be designed around a generic bridge contract rather than ES-DE-spe
 
 A frontend should be able to provide:
 
-- The `.m3u` input path or URI.
+- The input ROM path or URI.
 - The target emulator package/activity or a known target profile.
 - The target path/URI mode, when known.
 - Any emulator-specific intent action, data, MIME type, categories, extras, or flags required for launch.
@@ -188,21 +192,21 @@ The known ES-DE DuckStation activity rule is:
 </emulator>
 ```
 
-The first compatibility milestone is for dem3ux to reproduce a working DuckStation launch using the selected `.m3u` entry instead of the original `.m3u` playlist.
+The first compatibility milestone is for dem3ux to reproduce a working DuckStation launch using the selected `.m3u` entry instead of the original `.m3u` playlist, while proxying non-playlist ROMs unchanged.
 
 ## Proposed Bridge Extras
 
 The initial dem3ux bridge activity should accept these extras:
 
 - `dem3ux.target.activity`: target emulator activity as a flattened Android component string, such as `com.github.stenzek.duckstation/.EmulationActivity`.
-- `dem3ux.input.path`: frontend-provided `.m3u` path or URI.
+- `dem3ux.input.path`: frontend-provided ROM path or URI. Playlist inputs are demuxed; non-playlist inputs are proxied unchanged.
 - `dem3ux.target.action`: optional target emulator intent action.
 - `dem3ux.target.extra.*`: target emulator extras to forward after stripping the prefix.
 - `dem3ux.target.flag.clearTask`: forwards `Intent.FLAG_ACTIVITY_CLEAR_TASK` when true.
 - `dem3ux.target.flag.clearTop`: forwards `Intent.FLAG_ACTIVITY_CLEAR_TOP` when true.
 - `dem3ux.target.flag.noHistory`: forwards `Intent.FLAG_ACTIVITY_NO_HISTORY` when true.
 
-If a forwarded target extra value equals `dem3ux.input.path`, dem3ux replaces that value with the selected playlist entry before launching the emulator. This lets frontend commands mirror emulator-specific launch shapes such as DuckStation's `bootPath` extra while dem3ux swaps the `.m3u` for the selected disc image.
+If a forwarded target extra value equals `dem3ux.input.path`, dem3ux replaces that value with the selected playlist entry before launching the emulator. For non-playlist inputs, the selected entry is the original input path, so the value is forwarded unchanged. This lets frontend commands mirror emulator-specific launch shapes such as DuckStation's `bootPath` extra while dem3ux swaps `.m3u` playlists for the selected disc image when needed.
 
 These names are not stable API yet. They document the first integration contract to build and test.
 

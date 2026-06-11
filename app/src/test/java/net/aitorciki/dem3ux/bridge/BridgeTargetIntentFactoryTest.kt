@@ -62,4 +62,23 @@ class BridgeTargetIntentFactoryTest {
 
         assertEquals(selectedEntry, targetIntent.data.toString())
     }
+
+    @Test
+    fun `proxies direct rom path unchanged through forwarded extra`() {
+        val inputPath = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fpsx%2FDisc%201.chd"
+        val sourceIntent =
+            Intent()
+                .putExtra("${BridgeContract.TARGET_EXTRA_PREFIX}bootPath", inputPath)
+
+        val targetIntent =
+            BridgeTargetIntentFactory.build(
+                sourceIntent = sourceIntent,
+                targetComponent = targetComponent,
+                inputPath = inputPath,
+                selectedEntry = inputPath,
+            )
+
+        assertEquals(inputPath, targetIntent.getStringExtra("bootPath"))
+        assertNull(targetIntent.data)
+    }
 }

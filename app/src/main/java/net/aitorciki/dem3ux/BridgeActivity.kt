@@ -7,6 +7,7 @@ import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import net.aitorciki.dem3ux.bridge.BridgeContract
+import net.aitorciki.dem3ux.bridge.BridgeInputType
 import net.aitorciki.dem3ux.bridge.BridgeTargetIntentFactory
 import net.aitorciki.dem3ux.data.Dem3uxDatabaseProvider
 import net.aitorciki.dem3ux.data.PlaylistRepository
@@ -26,12 +27,17 @@ class BridgeActivity : ComponentActivity() {
         }
 
         lifecycleScope.launch {
-            val playlistContent = readPlaylistContent(inputPath)
             val selectedEntry =
-                playlistContent?.let { content ->
-                    PlaylistRepository(Dem3uxDatabaseProvider.get(this@BridgeActivity))
-                        .recordSeenPlaylist(sourcePath = inputPath, content = content)
-                        ?.selectedEntryPath
+                if (BridgeInputType.isPlaylist(inputPath)) {
+                    val playlistContent = readPlaylistContent(inputPath)
+
+                    playlistContent?.let { content ->
+                        PlaylistRepository(Dem3uxDatabaseProvider.get(this@BridgeActivity))
+                            .recordSeenPlaylist(sourcePath = inputPath, content = content)
+                            ?.selectedEntryPath
+                    }
+                } else {
+                    inputPath
                 }
 
             if (selectedEntry.isNullOrBlank()) {
