@@ -4,6 +4,7 @@ import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -112,6 +113,10 @@ private fun Dem3uxApp(
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val useTwoPane = maxWidth >= 840.dp && maxHeight >= 600.dp
             val selectedPlaylist = uiState.selectedPlaylist
+
+            BackHandler(enabled = !useTwoPane && selectedPlaylist != null) {
+                onBackClick()
+            }
 
             Scaffold(
                 topBar = {
