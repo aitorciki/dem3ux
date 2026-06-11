@@ -1,5 +1,6 @@
 package net.aitorciki.dem3ux.bridge
 
+import android.content.ClipData
 import android.content.ComponentName
 import android.content.Intent
 import androidx.core.net.toUri
@@ -37,6 +38,11 @@ object BridgeTargetIntentFactory {
 
         if (!replacedInputPath) {
             targetIntent.data = selectedEntry.toUri()
+        }
+
+        if (selectedEntry.startsWith("content://")) {
+            targetIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            targetIntent.clipData = ClipData.newRawUri("dem3ux selected entry", selectedEntry.toUri())
         }
 
         return targetIntent

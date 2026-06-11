@@ -65,4 +65,22 @@ class PlaylistEntryResolverTest {
             entries.first().resolvedPath,
         )
     }
+
+    @Test
+    fun `external storage tree document uri input resolves entries as sibling document uris`() {
+        val entries =
+            PlaylistEntryResolver.resolveEntries(
+                sourcePath =
+                    "content://com.android.externalstorage.documents/tree/" +
+                        "primary%3ADocuments%2Froms%2Fpsx/document/" +
+                        "primary%3ADocuments%2Froms%2Fpsx%2FNebula%20Drift.m3u",
+                content = ".Nebula Drift/Nebula Drift (Disc 1).chd",
+            )
+
+        assertEquals(
+            "content://com.android.externalstorage.documents/document/" +
+                "primary%3ADocuments%2Froms%2Fpsx%2F.Nebula%20Drift%2FNebula%20Drift%20%28Disc%201%29.chd",
+            entries.first().resolvedPath,
+        )
+    }
 }

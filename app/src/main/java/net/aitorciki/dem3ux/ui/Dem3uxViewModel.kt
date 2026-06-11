@@ -74,10 +74,10 @@ class Dem3uxViewModel(
 
             val selection = result.getOrNull()
             if (selection == null) {
-                importMessage.value = "Could not import playlist"
+                importMessage.value = "Could not import playlist."
             } else {
                 selectedPlaylistId.value = selection.playlistId
-                importMessage.value = "Playlist added"
+                importMessage.value = "Playlist added."
             }
         }
     }

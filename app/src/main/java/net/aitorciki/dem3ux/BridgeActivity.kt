@@ -1,39 +1,91 @@
 package net.aitorciki.dem3ux
 
 import android.content.ComponentName
+import android.content.Intent
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import net.aitorciki.dem3ux.bridge.BridgeContract
 import net.aitorciki.dem3ux.bridge.BridgeInputType
 import net.aitorciki.dem3ux.bridge.BridgeTargetIntentFactory
+import net.aitorciki.dem3ux.bridge.ExternalStorageUriMapper
 import net.aitorciki.dem3ux.data.Dem3uxDatabaseProvider
 import net.aitorciki.dem3ux.data.PlaylistRepository
 import java.io.File
 
 class BridgeActivity : ComponentActivity() {
+    private var pendingBridgeLaunch: BridgeLaunch? = null
+
+    private val openTreeLauncher =
+        registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+            val pendingLaunch = pendingBridgeLaunch
+            pendingBridgeLaunch = null
+
+            if (uri == null || pendingLaunch == null) {
+                logBridgeFailure("Folder access request was cancelled")
+                finish()
+                return@registerForActivityResult
+            }
+
+            runCatching {
+                contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }.onFailure { error ->
+                logBridgeFailure("Failed to persist folder access", error)
+            }
+
+            Log.i(TAG, "Retrying bridge launch after folder access grant")
+            runBridge(pendingLaunch)
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         val targetActivity = intent.getStringExtra(BridgeContract.EXTRA_TARGET_ACTIVITY)
-        val inputPath = intent.getStringExtra(BridgeContract.EXTRA_INPUT_PATH)
+        val dataPath = intent.dataString
+        val inputPath = intent.getStringExtra(BridgeContract.EXTRA_INPUT_PATH) ?: dataPath
         val targetComponent = targetActivity?.let(ComponentName::unflattenFromString)
 
         if (targetComponent == null || inputPath.isNullOrBlank()) {
+            logBridgeFailure("Finishing bridge launch because target or input is missing")
             finish()
             return
         }
 
+        runBridge(
+            BridgeLaunch(
+                inputPath = inputPath,
+                targetComponent = targetComponent,
+            ),
+        )
+    }
+
+    private fun runBridge(bridgeLaunch: BridgeLaunch) {
         lifecycleScope.launch {
+            val inputPath = bridgeLaunch.inputPath
+            val isPlaylist = BridgeInputType.isPlaylist(inputPath)
+
             val selectedEntry =
-                if (BridgeInputType.isPlaylist(inputPath)) {
-                    val playlistContent = readPlaylistContent(inputPath)
+                if (isPlaylist) {
+                    val playlistContentResult = readPlaylistContent(inputPath)
+                    if (playlistContentResult.securityException != null) {
+                        requestFolderAccessAndRetry(bridgeLaunch)
+                        return@launch
+                    }
+
+                    val playlistContent = playlistContentResult.content
 
                     playlistContent?.let { content ->
-                        PlaylistRepository(Dem3uxDatabaseProvider.get(this@BridgeActivity))
-                            .recordSeenPlaylist(sourcePath = inputPath, content = content)
+                        runCatching {
+                            PlaylistRepository(Dem3uxDatabaseProvider.get(this@BridgeActivity))
+                                .recordSeenPlaylist(sourcePath = inputPath, content = content)
+                        }.onFailure { error ->
+                            logBridgeFailure("Failed to record playlist", error)
+                        }.getOrNull()
                             ?.selectedEntryPath
                     }
                 } else {
@@ -41,38 +93,122 @@ class BridgeActivity : ComponentActivity() {
                 }
 
             if (selectedEntry.isNullOrBlank()) {
+                logBridgeFailure("Finishing bridge launch because no selected entry was resolved")
                 finish()
                 return@launch
             }
 
+            if (selectedEntry.requiresFolderAccessForForwarding()) {
+                requestFolderAccessAndRetry(bridgeLaunch)
+                return@launch
+            }
+
+            val grantableSelectedEntry = selectedEntry.mapThroughPersistedTreeGrant()
+
             val targetIntent =
                 BridgeTargetIntentFactory.build(
                     sourceIntent = intent,
-                    targetComponent = targetComponent,
+                    targetComponent = bridgeLaunch.targetComponent,
                     inputPath = inputPath,
-                    selectedEntry = selectedEntry,
+                    selectedEntry = grantableSelectedEntry,
                 )
-            startActivity(targetIntent)
+            runCatching {
+                startActivity(targetIntent)
+            }.onFailure { error ->
+                logBridgeFailure("Failed to launch target emulator.", error)
+            }
             finish()
         }
     }
 
-    private fun readPlaylistContent(inputPath: String): String? =
-        runCatching {
-            when {
-                inputPath.startsWith("content://") -> {
-                    contentResolver.openInputStream(inputPath.toUri())?.bufferedReader()?.use { reader ->
-                        reader.readText()
+    private fun requestFolderAccessAndRetry(bridgeLaunch: BridgeLaunch) {
+        if (bridgeLaunch.requestedFolderAccess) {
+            logBridgeFailure("Folder access was already requested, but the input is still inaccessible.")
+            Toast
+                .makeText(
+                    this,
+                    "dem3ux still cannot access this game. Select the ROMs folder that contains it.",
+                    Toast.LENGTH_LONG,
+                ).show()
+            finish()
+            return
+        }
+
+        pendingBridgeLaunch = bridgeLaunch.copy(requestedFolderAccess = true)
+        Toast.makeText(this, "Select the ROMs folder so dem3ux can access this game.", Toast.LENGTH_LONG).show()
+        openTreeLauncher.launch(null)
+    }
+
+    private fun readPlaylistContent(inputPath: String): PlaylistContentResult {
+        val content =
+            runCatching {
+                when {
+                    inputPath.startsWith("content://") -> {
+                        val readableInputPath = inputPath.mapThroughPersistedTreeGrant()
+                        contentResolver.openInputStream(readableInputPath.toUri())?.bufferedReader()?.use { reader ->
+                            reader.readText()
+                        }
+                    }
+
+                    inputPath.startsWith("file://") -> {
+                        File(requireNotNull(inputPath.toUri().path)).readText()
+                    }
+
+                    else -> {
+                        File(inputPath).readText()
                     }
                 }
-
-                inputPath.startsWith("file://") -> {
-                    File(requireNotNull(inputPath.toUri().path)).readText()
-                }
-
-                else -> {
-                    File(inputPath).readText()
-                }
+            }.onFailure { error ->
+                logBridgeFailure("Failed to read playlist content", error)
+            }.getOrElse { error ->
+                return PlaylistContentResult(securityException = error as? SecurityException)
             }
-        }.getOrNull()
+
+        return PlaylistContentResult(content = content)
+    }
+
+    private fun String.mapThroughPersistedTreeGrant(): String =
+        ExternalStorageUriMapper.mapToPersistedTreeUri(
+            uriString = this,
+            persistedTreeUris =
+                persistedReadableTreeUris(),
+        ) ?: this
+
+    private fun String.requiresFolderAccessForForwarding(): Boolean =
+        ExternalStorageUriMapper.documentId(this) != null &&
+            !ExternalStorageUriMapper.hasPersistedTreeGrant(
+                uriString = this,
+                persistedTreeUris = persistedReadableTreeUris(),
+            )
+
+    private fun persistedReadableTreeUris(): List<String> =
+        contentResolver.persistedUriPermissions
+            .filter { permission -> permission.isReadPermission }
+            .map { permission -> permission.uri.toString() }
+
+    private fun logBridgeFailure(
+        message: String,
+        error: Throwable? = null,
+    ) {
+        if (error == null) {
+            Log.w(TAG, message)
+        } else {
+            Log.w(TAG, message, error)
+        }
+    }
+
+    private data class BridgeLaunch(
+        val inputPath: String,
+        val targetComponent: ComponentName,
+        val requestedFolderAccess: Boolean = false,
+    )
+
+    private data class PlaylistContentResult(
+        val content: String? = null,
+        val securityException: SecurityException? = null,
+    )
+
+    private companion object {
+        const val TAG = "dem3ux"
+    }
 }

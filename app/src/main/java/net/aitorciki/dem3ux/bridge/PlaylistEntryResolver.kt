@@ -81,7 +81,7 @@ object PlaylistEntryResolver {
             return entryPath
         }
 
-        val encodedDocumentId = sourceUri.path.removePrefix("/document/")
+        val encodedDocumentId = sourceUri.path.substringAfterLast("/document/")
         val documentId = URLDecoder.decode(encodedDocumentId, StandardCharsets.UTF_8.name())
         val volumeSeparator = documentId.indexOf(':')
         if (volumeSeparator == -1) {

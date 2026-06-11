@@ -34,6 +34,7 @@ When launched by a frontend, dem3ux acts as a bridge:
 - Resolve relative playlist entries against the `.m3u` location.
 - Select the last-used entry for that playlist, or the first entry if no selection exists.
 - If the input is not a playlist, proxy the original path/URI unchanged.
+- Request and persist Android SAF folder access when required.
 - Launch the target emulator with the selected entry or proxied direct input.
 
 ### App UI Mode
@@ -111,6 +112,18 @@ Frontends and emulators may use different path forms:
 
 Path handling is core product logic. dem3ux should not assume all emulators accept the same path form.
 
+### SAF Folder Access
+
+When ES-DE passes `%ROMSAF%`, dem3ux may need its own persisted SAF folder grant before it can read `.m3u` playlists or forward direct image URIs to the target emulator.
+
+On first launch, dem3ux asks the user to select the ROMs folder, or a parent folder containing the system folder. The grant is persisted and reused for future launches. Clearing dem3ux app data removes this grant and will make dem3ux ask again.
+
+To reset dem3ux app data, including persisted folder grants and known playlist state:
+
+```bash
+adb shell pm clear net.aitorciki.dem3ux
+```
+
 The first implementation should focus on one verified path from ES-DE to dem3ux to DuckStation, then add compatibility targets incrementally.
 
 ## m3u Parsing
@@ -176,10 +189,10 @@ This proposed `es_find_rules.xml` entry lets ES-DE resolve dem3ux as an Android 
 
 ## ES-DE Example: DuckStation Through dem3ux
 
-This proposed `es_systems.xml` command is intentionally experimental. It defines the bridge contract dem3ux should initially implement and may need adjustment after on-device testing.
+This `es_systems.xml` command has been tested with ES-DE launching DuckStation through dem3ux for both `.m3u` playlists and direct image paths. The bridge contract names are still not stable API yet.
 
 ```xml
-<command label="DuckStation via dem3ux">%EMULATOR_DEM3UX% %ACTION%=android.intent.action.VIEW %EXTRA_dem3ux.target.activity%=com.github.stenzek.duckstation/.EmulationActivity %EXTRA_dem3ux.input.path%=%ROMSAF% %EXTRABOOL_dem3ux.target.extra.resumeState%=false %EXTRA_dem3ux.target.extra.bootPath%=%ROMSAF% %EXTRABOOL_dem3ux.target.flag.clearTask%=true %EXTRABOOL_dem3ux.target.flag.clearTop%=true</command>
+<command label="DuckStation via dem3ux">%EMULATOR_DEM3UX% %ACTION%=android.intent.action.VIEW %DATA%=%ROMSAF% %EXTRA_dem3ux.target.activity%=com.github.stenzek.duckstation/.EmulationActivity %EXTRA_dem3ux.input.path%=%ROMSAF% %EXTRABOOL_dem3ux.target.extra.resumeState%=false %EXTRA_dem3ux.target.extra.bootPath%=%ROMSAF% %EXTRABOOL_dem3ux.target.flag.clearTask%=true %EXTRABOOL_dem3ux.target.flag.clearTop%=true</command>
 ```
 
 The known ES-DE DuckStation activity rule is:
@@ -192,14 +205,14 @@ The known ES-DE DuckStation activity rule is:
 </emulator>
 ```
 
-The first compatibility milestone is for dem3ux to reproduce a working DuckStation launch using the selected `.m3u` entry instead of the original `.m3u` playlist, while proxying non-playlist ROMs unchanged.
+The first compatibility milestone has been validated with ES-DE launching DuckStation through dem3ux using SAF URIs. dem3ux launches the selected `.m3u` entry instead of the original playlist, and proxies non-playlist ROMs through the same command.
 
 ## Proposed Bridge Extras
 
 The initial dem3ux bridge activity should accept these extras:
 
 - `dem3ux.target.activity`: target emulator activity as a flattened Android component string, such as `com.github.stenzek.duckstation/.EmulationActivity`.
-- `dem3ux.input.path`: frontend-provided ROM path or URI. Playlist inputs are demuxed; non-playlist inputs are proxied unchanged.
+- `dem3ux.input.path`: frontend-provided ROM path or URI. Playlist inputs are demuxed; non-playlist inputs are proxied unchanged. If this extra is missing, dem3ux falls back to the intent data URI.
 - `dem3ux.target.action`: optional target emulator intent action.
 - `dem3ux.target.extra.*`: target emulator extras to forward after stripping the prefix.
 - `dem3ux.target.flag.clearTask`: forwards `Intent.FLAG_ACTIVITY_CLEAR_TASK` when true.
@@ -207,6 +220,8 @@ The initial dem3ux bridge activity should accept these extras:
 - `dem3ux.target.flag.noHistory`: forwards `Intent.FLAG_ACTIVITY_NO_HISTORY` when true.
 
 If a forwarded target extra value equals `dem3ux.input.path`, dem3ux replaces that value with the selected playlist entry before launching the emulator. For non-playlist inputs, the selected entry is the original input path, so the value is forwarded unchanged. This lets frontend commands mirror emulator-specific launch shapes such as DuckStation's `bootPath` extra while dem3ux swaps `.m3u` playlists for the selected disc image when needed.
+
+When the input is a SAF URI, also pass it as `%DATA%` where the frontend supports it. Android URI read permissions are commonly tied to intent data. In the tested ES-DE flow, dem3ux still needs its own persisted SAF folder grant before it can read playlists or forward selected direct image URIs to DuckStation.
 
 These names are not stable API yet. They document the first integration contract to build and test.
 
