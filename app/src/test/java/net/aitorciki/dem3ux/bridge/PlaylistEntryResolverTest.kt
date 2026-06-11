@@ -3,39 +3,39 @@ package net.aitorciki.dem3ux.bridge
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class FirstPlaylistEntryResolverTest {
+class PlaylistEntryResolverTest {
     @Test
-    fun `plain filesystem input resolves first entry as filesystem path`() {
-        val selectedEntry =
-            FirstPlaylistEntryResolver.resolve(
+    fun `plain filesystem input resolves entries as filesystem paths`() {
+        val entries =
+            PlaylistEntryResolver.resolveEntries(
                 sourcePath = "/storage/emulated/0/roms/psx/Nebula Drift.m3u",
                 content = "Disc 1.chd\nDisc 2.chd",
             )
 
         assertEquals(
             "/storage/emulated/0/roms/psx/Disc 1.chd",
-            selectedEntry,
+            entries.first().resolvedPath,
         )
     }
 
     @Test
-    fun `file uri input resolves first entry as file uri`() {
-        val selectedEntry =
-            FirstPlaylistEntryResolver.resolve(
+    fun `file uri input resolves entries as file uris`() {
+        val entries =
+            PlaylistEntryResolver.resolveEntries(
                 sourcePath = "file:///storage/emulated/0/roms/psx/Nebula%20Drift.m3u",
                 content = "Disc 1.chd\nDisc 2.chd",
             )
 
         assertEquals(
             "file:///storage/emulated/0/roms/psx/Disc%201.chd",
-            selectedEntry,
+            entries.first().resolvedPath,
         )
     }
 
     @Test
-    fun `external storage document uri input resolves first entry as sibling document uri`() {
-        val selectedEntry =
-            FirstPlaylistEntryResolver.resolve(
+    fun `external storage document uri input resolves entries as sibling document uris`() {
+        val entries =
+            PlaylistEntryResolver.resolveEntries(
                 sourcePath =
                     "content://com.android.externalstorage.documents/document/" +
                         "primary%3Aroms%2Fpsx%2FNebula%20Drift.m3u",
@@ -45,14 +45,14 @@ class FirstPlaylistEntryResolverTest {
         assertEquals(
             "content://com.android.externalstorage.documents/document/" +
                 "primary%3Aroms%2Fpsx%2F.Nebula%20Drift%2FNebula%20Drift%20%28Disc%201%29.chd",
-            selectedEntry,
+            entries.first().resolvedPath,
         )
     }
 
     @Test
     fun `external storage document uri input normalizes relative dot segments`() {
-        val selectedEntry =
-            FirstPlaylistEntryResolver.resolve(
+        val entries =
+            PlaylistEntryResolver.resolveEntries(
                 sourcePath =
                     "content://com.android.externalstorage.documents/document/" +
                         "primary%3Aroms%2Fpsx%2Fplaylists%2FNebula%20Drift.m3u",
@@ -62,7 +62,7 @@ class FirstPlaylistEntryResolverTest {
         assertEquals(
             "content://com.android.externalstorage.documents/document/" +
                 "primary%3Aroms%2Fpsx%2FNebula%20Drift%2FDisc%201.chd",
-            selectedEntry,
+            entries.first().resolvedPath,
         )
     }
 }

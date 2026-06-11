@@ -1,5 +1,6 @@
 package net.aitorciki.dem3ux.bridge
 
+import net.aitorciki.dem3ux.m3u.M3uEntry
 import net.aitorciki.dem3ux.m3u.M3uParser
 import java.io.File
 import java.net.URI
@@ -7,42 +8,55 @@ import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-object FirstPlaylistEntryResolver {
-    fun resolve(
+object PlaylistEntryResolver {
+    fun resolveEntries(
         sourcePath: String,
         content: String,
-    ): String? {
-        val firstEntry = firstEntryLine(content) ?: return null
+    ): List<M3uEntry> {
+        val entryLines = entryLines(content)
 
         return when {
             sourcePath.startsWith("content://") -> {
-                resolveContentUri(sourcePath, firstEntry)
+                entryLines.mapIndexed { index, line ->
+                    M3uEntry(
+                        index = index,
+                        rawLine = line,
+                        resolvedPath = resolveContentUri(sourcePath, line),
+                    )
+                }
             }
 
             sourcePath.startsWith("file://") -> {
-                resolveFileUri(sourcePath, firstEntry)
+                entryLines.mapIndexed { index, line ->
+                    M3uEntry(
+                        index = index,
+                        rawLine = line,
+                        resolvedPath = resolveFileUri(sourcePath, line),
+                    )
+                }
             }
 
             else -> {
-                M3uParser
-                    .parse(sourcePath = sourcePath, content = content)
-                    .entries
-                    .firstOrNull()
-                    ?.resolvedPath
+                M3uParser.parse(sourcePath = sourcePath, content = content).entries
             }
         }
     }
 
-    private fun firstEntryLine(content: String): String? =
+    private fun entryLines(content: String): List<String> =
         content
             .lineSequence()
             .map(String::trim)
-            .firstOrNull { line -> line.isNotEmpty() && !line.startsWith("#") }
+            .filter { line -> line.isNotEmpty() && !line.startsWith("#") }
+            .toList()
 
     private fun resolveFileUri(
         sourcePath: String,
         entryPath: String,
     ): String {
+        if (entryPath.startsWith("content://") || entryPath.startsWith("file://")) {
+            return entryPath
+        }
+
         val sourceUri = URI(sourcePath)
         val sourceFile = File(requireNotNull(sourceUri.path) { "file URI path is required" })
         val resolvedPath =

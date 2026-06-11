@@ -4,9 +4,12 @@ import android.content.ComponentName
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
 import net.aitorciki.dem3ux.bridge.BridgeContract
 import net.aitorciki.dem3ux.bridge.BridgeTargetIntentFactory
-import net.aitorciki.dem3ux.bridge.FirstPlaylistEntryResolver
+import net.aitorciki.dem3ux.data.Dem3uxDatabaseProvider
+import net.aitorciki.dem3ux.data.PlaylistRepository
 import java.io.File
 
 class BridgeActivity : ComponentActivity() {
@@ -22,26 +25,30 @@ class BridgeActivity : ComponentActivity() {
             return
         }
 
-        val playlistContent = readPlaylistContent(inputPath)
-        val selectedEntry =
-            playlistContent?.let { content ->
-                FirstPlaylistEntryResolver.resolve(sourcePath = inputPath, content = content)
+        lifecycleScope.launch {
+            val playlistContent = readPlaylistContent(inputPath)
+            val selectedEntry =
+                playlistContent?.let { content ->
+                    PlaylistRepository(Dem3uxDatabaseProvider.get(this@BridgeActivity))
+                        .recordSeenPlaylist(sourcePath = inputPath, content = content)
+                        ?.selectedEntryPath
+                }
+
+            if (selectedEntry.isNullOrBlank()) {
+                finish()
+                return@launch
             }
 
-        if (selectedEntry.isNullOrBlank()) {
+            val targetIntent =
+                BridgeTargetIntentFactory.build(
+                    sourceIntent = intent,
+                    targetComponent = targetComponent,
+                    inputPath = inputPath,
+                    selectedEntry = selectedEntry,
+                )
+            startActivity(targetIntent)
             finish()
-            return
         }
-
-        val targetIntent =
-            BridgeTargetIntentFactory.build(
-                sourceIntent = intent,
-                targetComponent = targetComponent,
-                inputPath = inputPath,
-                selectedEntry = selectedEntry,
-            )
-        startActivity(targetIntent)
-        finish()
     }
 
     private fun readPlaylistContent(inputPath: String): String? =
