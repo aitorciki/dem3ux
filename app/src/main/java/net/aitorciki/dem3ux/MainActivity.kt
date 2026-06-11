@@ -430,7 +430,10 @@ private fun PlaylistEntryRow(
 
 @Composable
 private fun EmptyPlaylistList() {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Text(
                 text = "No playlists yet",
