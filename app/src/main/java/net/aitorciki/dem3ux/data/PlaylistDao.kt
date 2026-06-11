@@ -14,10 +14,6 @@ interface PlaylistDao {
     @Query("SELECT * FROM playlists ORDER BY lastSeenAt DESC")
     fun observePlaylistsWithEntries(): Flow<List<PlaylistWithEntries>>
 
-    @Transaction
-    @Query("SELECT * FROM playlists WHERE id = :playlistId")
-    fun observePlaylistWithEntries(playlistId: Long): Flow<PlaylistWithEntries?>
-
     @Query("SELECT * FROM playlists WHERE sourcePath = :sourcePath LIMIT 1")
     suspend fun getPlaylistBySourcePath(sourcePath: String): PlaylistEntity?
 

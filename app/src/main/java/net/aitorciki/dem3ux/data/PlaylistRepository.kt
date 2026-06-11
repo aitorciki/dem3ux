@@ -20,8 +20,6 @@ class PlaylistRepository(
 
     fun observePlaylistsWithEntries(): Flow<List<PlaylistWithEntries>> = playlistDao.observePlaylistsWithEntries()
 
-    fun observePlaylistWithEntries(playlistId: Long): Flow<PlaylistWithEntries?> = playlistDao.observePlaylistWithEntries(playlistId)
-
     suspend fun recordSeenPlaylist(
         sourcePath: String,
         content: String,
