@@ -15,24 +15,18 @@ object BridgeTargetIntentFactory {
         val targetIntent =
             Intent(sourceIntent.getStringExtra(BridgeContract.EXTRA_TARGET_ACTION)).apply {
                 component = targetComponent
+                addFlags(sourceIntent.flags and PROXIED_ACTIVITY_FLAGS)
             }
 
         var replacedInputPath = false
         sourceIntent.extras?.keySet().orEmpty().forEach { key ->
-            when {
-                key.startsWith(BridgeContract.TARGET_EXTRA_PREFIX) -> {
-                    val targetExtraName = key.removePrefix(BridgeContract.TARGET_EXTRA_PREFIX)
-                    val value = sourceIntent.getExtraValue(key)
-                    val forwardedValue = if (value == inputPath) selectedEntry else value
-                    if (value == inputPath) {
-                        replacedInputPath = true
-                    }
-                    putExtra(targetIntent, targetExtraName, forwardedValue)
+            if (!key.startsWith(DEM3UX_EXTRA_PREFIX)) {
+                val value = sourceIntent.getExtraValue(key)
+                val replacement = value.replaceInputPath(inputPath = inputPath, selectedEntry = selectedEntry)
+                if (replacement.replacedInputPath) {
+                    replacedInputPath = true
                 }
-
-                key.startsWith(BridgeContract.TARGET_FLAG_PREFIX) && sourceIntent.getBooleanExtra(key, false) -> {
-                    targetIntent.addFlags(flagFor(key))
-                }
+                putExtra(targetIntent, key, replacement.value)
             }
         }
 
@@ -57,17 +51,65 @@ object BridgeTargetIntentFactory {
         value: Any?,
     ) {
         when (value) {
-            is Boolean -> intent.putExtra(name, value)
-            is Int -> intent.putExtra(name, value)
-            is String -> intent.putExtra(name, value)
+            is Boolean -> {
+                intent.putExtra(name, value)
+            }
+
+            is Int -> {
+                intent.putExtra(name, value)
+            }
+
+            is String -> {
+                intent.putExtra(name, value)
+            }
+
+            is Array<*> -> {
+                if (value.all { it is String }) {
+                    @Suppress("UNCHECKED_CAST")
+                    intent.putExtra(name, value as Array<String>)
+                }
+            }
         }
     }
 
-    private fun flagFor(key: String): Int =
-        when (key) {
-            BridgeContract.TARGET_FLAG_CLEAR_TASK -> Intent.FLAG_ACTIVITY_CLEAR_TASK
-            BridgeContract.TARGET_FLAG_CLEAR_TOP -> Intent.FLAG_ACTIVITY_CLEAR_TOP
-            BridgeContract.TARGET_FLAG_NO_HISTORY -> Intent.FLAG_ACTIVITY_NO_HISTORY
-            else -> 0
+    private fun Any?.replaceInputPath(
+        inputPath: String,
+        selectedEntry: String,
+    ): ExtraReplacement =
+        when (this) {
+            inputPath -> {
+                ExtraReplacement(value = selectedEntry, replacedInputPath = true)
+            }
+
+            is Array<*> if all { it is String } -> {
+                var replacedInputPath = false
+                val values =
+                    map { value ->
+                        if (value == inputPath) {
+                            replacedInputPath = true
+                            selectedEntry
+                        } else {
+                            value as String
+                        }
+                    }.toTypedArray()
+
+                ExtraReplacement(value = values, replacedInputPath = replacedInputPath)
+            }
+
+            else -> {
+                ExtraReplacement(value = this, replacedInputPath = false)
+            }
         }
+
+    private const val PROXIED_ACTIVITY_FLAGS =
+        Intent.FLAG_ACTIVITY_CLEAR_TASK or
+            Intent.FLAG_ACTIVITY_CLEAR_TOP or
+            Intent.FLAG_ACTIVITY_NO_HISTORY
+
+    private const val DEM3UX_EXTRA_PREFIX = "dem3ux."
+
+    private data class ExtraReplacement(
+        val value: Any?,
+        val replacedInputPath: Boolean,
+    )
 }

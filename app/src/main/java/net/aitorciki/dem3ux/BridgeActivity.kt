@@ -46,8 +46,7 @@ class BridgeActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val targetActivity = intent.getStringExtra(BridgeContract.EXTRA_TARGET_ACTIVITY)
-        val dataPath = intent.dataString
-        val inputPath = intent.getStringExtra(BridgeContract.EXTRA_INPUT_PATH) ?: dataPath
+        val inputPath = intent.dataString
         val targetComponent = targetActivity?.let(ComponentName::unflattenFromString)
 
         if (targetComponent == null || inputPath.isNullOrBlank()) {
