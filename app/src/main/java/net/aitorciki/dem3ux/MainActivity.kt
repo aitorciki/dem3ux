@@ -14,6 +14,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -26,40 +27,60 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import net.aitorciki.dem3ux.ui.Dem3uxUiState
 import net.aitorciki.dem3ux.ui.Dem3uxViewModel
 import net.aitorciki.dem3ux.ui.PlaylistDetailUi
 import net.aitorciki.dem3ux.ui.PlaylistEntryUi
 import net.aitorciki.dem3ux.ui.PlaylistSummaryUi
+
+private const val SETUP_GUIDE_URL = "https://github.com/aitorciki/dem3ux#frontend-integration"
+
+private enum class MainDestination {
+    Playlists,
+    Help,
+}
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,6 +99,7 @@ fun Dem3uxApp() {
 
     Dem3uxApp(
         uiState = uiState,
+        versionLabel = "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
         onPlaylistClick = viewModel::selectPlaylist,
         onBackClick = viewModel::clearSelectedPlaylist,
         onEntryClick = viewModel::selectEntry,
@@ -89,6 +111,7 @@ fun Dem3uxApp() {
 @Composable
 private fun Dem3uxApp(
     uiState: Dem3uxUiState,
+    versionLabel: String,
     onPlaylistClick: (Long) -> Unit,
     onBackClick: () -> Unit,
     onEntryClick: (Long, Int) -> Unit,
@@ -96,6 +119,10 @@ private fun Dem3uxApp(
     onImportMessageShown: () -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    val coroutineScope = rememberCoroutineScope()
+    val uriHandler = LocalUriHandler.current
+    var destination by remember { mutableStateOf(MainDestination.Playlists) }
     val openDocumentLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) {
@@ -113,63 +140,112 @@ private fun Dem3uxApp(
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val useTwoPane = maxWidth >= 840.dp && maxHeight >= 600.dp
             val selectedPlaylist = uiState.selectedPlaylist
-
-            BackHandler(enabled = !useTwoPane && selectedPlaylist != null) {
-                onBackClick()
+            val openDrawer = {
+                coroutineScope.launch { drawerState.open() }
+                Unit
+            }
+            val openSetupGuide = {
+                uriHandler.openUri(SETUP_GUIDE_URL)
+                Unit
             }
 
-            Scaffold(
-                topBar = {
-                    if (!useTwoPane && selectedPlaylist != null) {
-                        PlaylistDetailTopBar(
-                            title = selectedPlaylist.displayName,
-                            subtitle = selectedPlaylist.sourcePath,
-                            onBackClick = onBackClick,
-                        )
-                    } else {
-                        AppTopBar(
-                            title = "dem3ux",
-                            subtitle = if (useTwoPane) null else "Seen playlists",
-                        )
-                    }
+            BackHandler(enabled = destination == MainDestination.Help) {
+                destination = MainDestination.Playlists
+            }
+            BackHandler(enabled = destination == MainDestination.Playlists && !useTwoPane && selectedPlaylist != null) {
+                onBackClick()
+            }
+            BackHandler(enabled = drawerState.isOpen) {
+                coroutineScope.launch { drawerState.close() }
+            }
+
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                drawerContent = {
+                    Dem3uxDrawer(
+                        destination = destination,
+                        versionLabel = versionLabel,
+                        onDestinationClick = { selectedDestination ->
+                            destination = selectedDestination
+                            coroutineScope.launch { drawerState.close() }
+                        },
+                    )
                 },
-                snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-                floatingActionButton = {
-                    FloatingActionButton(onClick = { openDocumentLauncher.launch(arrayOf("*/*")) }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_open_file),
-                            contentDescription = "Open m3u playlist",
-                        )
-                    }
-                },
-            ) { contentPadding ->
-                Surface(modifier = Modifier.fillMaxSize()) {
-                    Column(
-                        modifier =
-                            Modifier
-                                .fillMaxSize()
-                                .padding(contentPadding)
-                                .padding(16.dp),
-                    ) {
-                        if (useTwoPane) {
-                            TwoPaneContent(
-                                uiState = uiState,
-                                onPlaylistClick = onPlaylistClick,
-                                onEntryClick = onEntryClick,
-                                modifier = Modifier.weight(1f),
-                            )
-                        } else if (uiState.selectedPlaylist == null) {
-                            PlaylistList(
-                                playlists = uiState.playlists,
-                                onPlaylistClick = onPlaylistClick,
-                                modifier = Modifier.weight(1f),
-                            )
-                        } else {
-                            PlaylistDetail(
-                                playlist = uiState.selectedPlaylist,
-                                onEntryClick = onEntryClick,
-                                showTitle = false,
-                            )
+            ) {
+                Scaffold(
+                    topBar = {
+                        when {
+                            destination == MainDestination.Help -> {
+                                AppTopBar(
+                                    title = "Help",
+                                    onMenuClick = openDrawer,
+                                )
+                            }
+
+                            !useTwoPane && selectedPlaylist != null -> {
+                                PlaylistDetailTopBar(
+                                    title = selectedPlaylist.displayName,
+                                    subtitle = selectedPlaylist.sourcePath,
+                                    onBackClick = onBackClick,
+                                )
+                            }
+
+                            else -> {
+                                AppTopBar(
+                                    title = "dem3ux",
+                                    subtitle = if (useTwoPane) null else "Seen playlists",
+                                    onMenuClick = openDrawer,
+                                )
+                            }
+                        }
+                    },
+                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+                    floatingActionButton = {
+                        if (destination == MainDestination.Playlists) {
+                            FloatingActionButton(onClick = { openDocumentLauncher.launch(arrayOf("*/*")) }) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_open_file),
+                                    contentDescription = "Open m3u playlist",
+                                )
+                            }
+                        }
+                    },
+                ) { contentPadding ->
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        Column(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(contentPadding)
+                                    .padding(16.dp),
+                        ) {
+                            if (destination == MainDestination.Help) {
+                                HelpContent(
+                                    onOpenSetupGuideClick = openSetupGuide,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            } else if (useTwoPane) {
+                                TwoPaneContent(
+                                    uiState = uiState,
+                                    onPlaylistClick = onPlaylistClick,
+                                    onEntryClick = onEntryClick,
+                                    onOpenSetupGuideClick = openSetupGuide,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            } else if (uiState.selectedPlaylist == null) {
+                                PlaylistList(
+                                    playlists = uiState.playlists,
+                                    onPlaylistClick = onPlaylistClick,
+                                    onOpenSetupGuideClick = openSetupGuide,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            } else {
+                                PlaylistDetail(
+                                    playlist = uiState.selectedPlaylist,
+                                    onEntryClick = onEntryClick,
+                                    showTitle = false,
+                                )
+                            }
                         }
                     }
                 }
@@ -198,12 +274,14 @@ private fun TwoPaneContent(
     uiState: Dem3uxUiState,
     onPlaylistClick: (Long) -> Unit,
     onEntryClick: (Long, Int) -> Unit,
+    onOpenSetupGuideClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(modifier = modifier.fillMaxSize()) {
         PlaylistList(
             playlists = uiState.playlists,
             onPlaylistClick = onPlaylistClick,
+            onOpenSetupGuideClick = onOpenSetupGuideClick,
             modifier = Modifier.weight(0.42f),
         )
         Spacer(modifier = Modifier.width(16.dp))
@@ -263,6 +341,7 @@ private fun PlaylistDetailTopBar(
 private fun AppTopBar(
     title: String,
     subtitle: String? = null,
+    onMenuClick: (() -> Unit)? = null,
 ) {
     TopAppBar(
         title = {
@@ -277,18 +356,66 @@ private fun AppTopBar(
                 }
             }
         },
+        navigationIcon = {
+            if (onMenuClick != null) {
+                IconButton(onClick = onMenuClick) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_menu),
+                        contentDescription = "Open navigation drawer",
+                    )
+                }
+            }
+        },
     )
+}
+
+@Composable
+private fun Dem3uxDrawer(
+    destination: MainDestination,
+    versionLabel: String,
+    onDestinationClick: (MainDestination) -> Unit,
+) {
+    ModalDrawerSheet {
+        Column(modifier = Modifier.fillMaxHeight()) {
+            Text(
+                text = "dem3ux",
+                modifier = Modifier.padding(28.dp, 24.dp, 28.dp, 12.dp),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            NavigationDrawerItem(
+                label = { Text("Playlists") },
+                selected = destination == MainDestination.Playlists,
+                onClick = { onDestinationClick(MainDestination.Playlists) },
+                modifier = Modifier.padding(horizontal = 12.dp),
+            )
+            NavigationDrawerItem(
+                label = { Text("Help") },
+                selected = destination == MainDestination.Help,
+                onClick = { onDestinationClick(MainDestination.Help) },
+                modifier = Modifier.padding(horizontal = 12.dp),
+            )
+            Spacer(modifier = Modifier.weight(1f))
+            Text(
+                text = versionLabel,
+                modifier = Modifier.padding(28.dp, 12.dp, 28.dp, 24.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 @Composable
 private fun PlaylistList(
     playlists: List<PlaylistSummaryUi>,
     onPlaylistClick: (Long) -> Unit,
+    onOpenSetupGuideClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         if (playlists.isEmpty()) {
-            EmptyPlaylistList()
+            EmptyPlaylistList(onOpenSetupGuideClick = onOpenSetupGuideClick)
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(playlists, key = { playlist -> playlist.id }) { playlist ->
@@ -434,7 +561,7 @@ private fun PlaylistEntryRow(
 }
 
 @Composable
-private fun EmptyPlaylistList() {
+private fun EmptyPlaylistList(onOpenSetupGuideClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -446,12 +573,70 @@ private fun EmptyPlaylistList() {
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Launch an .m3u through dem3ux once. It will appear here so you can choose its default entry.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            SetupGuideText(onOpenSetupGuideClick = onOpenSetupGuideClick)
         }
+    }
+}
+
+@Composable
+private fun HelpContent(
+    onOpenSetupGuideClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxSize()) {
+        Text(
+            text = "Setup guide",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        ) {
+            Column(modifier = Modifier.padding(18.dp)) {
+                SetupGuideText(onOpenSetupGuideClick = onOpenSetupGuideClick)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SetupGuideText(onOpenSetupGuideClick: () -> Unit) {
+    Text(
+        text = "dem3ux is a bridge, so it must be configured manually in your emulator frontend.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        text =
+            buildAnnotatedString {
+                append("Configure the frontend to launch ")
+                withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) {
+                    append("net.aitorciki.dem3ux/.BridgeActivity")
+                }
+                append(" and pass the target emulator with ")
+                withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) {
+                    append("dem3ux.target.activity")
+                }
+                append(".")
+            },
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        text = "Setup examples are available in the project README.",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(modifier = Modifier.height(12.dp))
+    TextButton(
+        onClick = onOpenSetupGuideClick,
+        contentPadding = PaddingValues(0.dp),
+    ) {
+        Text("Open setup guide")
     }
 }
 
@@ -482,6 +667,7 @@ private fun Dem3uxAppInteractivePreview() {
 
     Dem3uxApp(
         uiState = uiState,
+        versionLabel = PREVIEW_VERSION_LABEL,
         onPlaylistClick = { playlistId ->
             uiState = uiState.copy(selectedPlaylist = previewDetailsById[playlistId])
         },
@@ -523,6 +709,7 @@ private fun Dem3uxAppInteractivePreview() {
 private fun Dem3uxAppListPreview() {
     Dem3uxApp(
         uiState = previewListState,
+        versionLabel = PREVIEW_VERSION_LABEL,
         onPlaylistClick = {},
         onBackClick = {},
         onEntryClick = { _, _ -> },
@@ -536,12 +723,21 @@ private fun Dem3uxAppListPreview() {
 private fun Dem3uxAppDetailPreview() {
     Dem3uxApp(
         uiState = previewDetailState,
+        versionLabel = PREVIEW_VERSION_LABEL,
         onPlaylistClick = {},
         onBackClick = {},
         onEntryClick = { _, _ -> },
         onOpenPlaylistClick = {},
         onImportMessageShown = {},
     )
+}
+
+@Preview(showBackground = true, name = "Help")
+@Composable
+private fun HelpContentPreview() {
+    Dem3uxTheme {
+        HelpContent(onOpenSetupGuideClick = {})
+    }
 }
 
 private val previewPlaylists =
@@ -630,3 +826,5 @@ private val previewDetailState =
         playlists = previewPlaylists,
         selectedPlaylist = previewNebulaDriftDetail,
     )
+
+private const val PREVIEW_VERSION_LABEL = "Version 1.0.0 (1)"
