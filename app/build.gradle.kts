@@ -1,7 +1,42 @@
+import org.gradle.api.GradleException
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.compose)
+}
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties =
+    Properties().apply {
+        if (keystorePropertiesFile.exists()) {
+            keystorePropertiesFile.inputStream().use(::load)
+        }
+    }
+
+fun keystoreProperty(name: String): String? = keystoreProperties.getProperty(name)?.takeIf { value -> value.isNotBlank() }
+
+val hasReleaseSigningProperties =
+    listOf("storeFile", "storePassword", "keyAlias")
+        .all { name -> keystoreProperty(name) != null }
+
+val releaseKeyPassword: String?
+    get() = keystoreProperty("keyPassword") ?: keystoreProperty("storePassword")
+
+gradle.taskGraph.whenReady {
+    val releaseArtifactRequested =
+        allTasks.any { task ->
+            task.project == project &&
+                task.name in setOf("assemble", "assembleRelease", "bundleRelease", "packageRelease")
+        }
+
+    if (releaseArtifactRequested && !hasReleaseSigningProperties) {
+        throw GradleException(
+            "Release signing requires a complete root keystore.properties file. " +
+                "Use keystore.properties.example as a template.",
+        )
+    }
 }
 
 android {
@@ -22,6 +57,26 @@ android {
         abortOnError = true
         warningsAsErrors = true
         disable += setOf("AndroidGradlePluginVersion", "GradleDependency", "OldTargetApi")
+    }
+
+    signingConfigs {
+        if (hasReleaseSigningProperties) {
+            create("release") {
+                storeFile = file(requireNotNull(keystoreProperty("storeFile")))
+                storePassword = requireNotNull(keystoreProperty("storePassword"))
+                keyAlias = requireNotNull(keystoreProperty("keyAlias"))
+                keyPassword = requireNotNull(releaseKeyPassword)
+                storeType = keystoreProperty("storeType") ?: "PKCS12"
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (hasReleaseSigningProperties) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
     }
 
     buildFeatures {

@@ -11,6 +11,7 @@ captures/
 
 # Local machine files
 local.properties
+keystore.properties
 kls_database.db
 .DS_Store
 .kotlin/
