@@ -3,7 +3,7 @@ package net.aitorciki.dem3ux.bridge
 import android.content.ComponentName
 import android.content.Intent
 
-data class BridgePreset(
+data class PresetBridge(
     val id: String,
     val aliasClassName: String,
     val targetActivity: String,
@@ -20,12 +20,12 @@ data class BridgePreset(
         }
 }
 
-object BridgePresets {
-    private val presets = mutableListOf<BridgePreset>()
+object PresetBridges {
+    private val presets = mutableListOf<PresetBridge>()
 
     val duckStation =
         preset(
-            BridgePreset(
+            PresetBridge(
                 id = "duckstation",
                 aliasClassName = "net.aitorciki.dem3ux.presets.DuckStationBridgeActivity",
                 targetActivity = "com.github.stenzek.duckstation/.EmulationActivity",
@@ -35,7 +35,7 @@ object BridgePresets {
 
     val flycast =
         preset(
-            BridgePreset(
+            PresetBridge(
                 id = "flycast",
                 aliasClassName = "net.aitorciki.dem3ux.presets.FlycastBridgeActivity",
                 targetActivity = "com.flycast.emulator/com.flycast.emulator.MainActivity",
@@ -47,7 +47,7 @@ object BridgePresets {
         presets.associateBy { preset -> preset.aliasClassName }
     }
 
-    fun fromAliasClassName(className: String): BridgePreset? = presetsByAliasClassName[className]
+    fun fromAliasClassName(className: String): PresetBridge? = presetsByAliasClassName[className]
 
-    private fun preset(preset: BridgePreset): BridgePreset = preset.also { registeredPreset -> presets += registeredPreset }
+    private fun preset(preset: PresetBridge): PresetBridge = preset.also { registeredPreset -> presets += registeredPreset }
 }

@@ -11,13 +11,13 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
-class BridgePresetTest {
+class PresetBridgeTest {
     @Test
     fun `DuckStation preset reads bridge input from bootPath extra`() {
         val inputPath = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fpsx%2FGame.m3u"
         val sourceIntent = Intent().putExtra("bootPath", inputPath)
 
-        assertEquals(inputPath, BridgePresets.duckStation.inputPathFrom(sourceIntent))
+        assertEquals(inputPath, PresetBridges.duckStation.inputPathFrom(sourceIntent))
     }
 
     @Test
@@ -27,14 +27,14 @@ class BridgePresetTest {
                 "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fpsx%2FGame.m3u".toUri(),
             )
 
-        assertNull(BridgePresets.duckStation.inputPathFrom(sourceIntent))
+        assertNull(PresetBridges.duckStation.inputPathFrom(sourceIntent))
     }
 
     @Test
     fun `DuckStation preset maps alias to real target component`() {
-        val preset = BridgePresets.fromAliasClassName("net.aitorciki.dem3ux.presets.DuckStationBridgeActivity")
+        val preset = PresetBridges.fromAliasClassName("net.aitorciki.dem3ux.presets.DuckStationBridgeActivity")
 
-        assertEquals(BridgePresets.duckStation, preset)
+        assertEquals(PresetBridges.duckStation, preset)
         assertEquals("com.github.stenzek.duckstation", preset?.targetComponent?.packageName)
         assertEquals("com.github.stenzek.duckstation.EmulationActivity", preset?.targetComponent?.className)
     }
@@ -51,13 +51,13 @@ class BridgePresetTest {
         val targetIntent =
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
-                targetComponent = requireNotNull(BridgePresets.duckStation.targetComponent),
-                targetAction = BridgePresets.duckStation.targetAction,
+                targetComponent = requireNotNull(PresetBridges.duckStation.targetComponent),
+                targetAction = PresetBridges.duckStation.targetAction,
                 inputPath = inputPath,
                 selectedEntry = selectedEntry,
             )
 
-        assertEquals(BridgePresets.duckStation.targetComponent, targetIntent.component)
+        assertEquals(PresetBridges.duckStation.targetComponent, targetIntent.component)
         assertEquals(selectedEntry, targetIntent.getStringExtra("bootPath"))
         assertEquals(false, targetIntent.getBooleanExtra("resumeState", true))
         assertNull(targetIntent.data)
@@ -68,14 +68,14 @@ class BridgePresetTest {
         val inputPath = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fdc%2FGame.m3u"
         val sourceIntent = Intent().setData(inputPath.toUri())
 
-        assertEquals(inputPath, BridgePresets.flycast.inputPathFrom(sourceIntent))
+        assertEquals(inputPath, PresetBridges.flycast.inputPathFrom(sourceIntent))
     }
 
     @Test
     fun `Flycast preset maps alias to real target component`() {
-        val preset = BridgePresets.fromAliasClassName("net.aitorciki.dem3ux.presets.FlycastBridgeActivity")
+        val preset = PresetBridges.fromAliasClassName("net.aitorciki.dem3ux.presets.FlycastBridgeActivity")
 
-        assertEquals(BridgePresets.flycast, preset)
+        assertEquals(PresetBridges.flycast, preset)
         assertEquals("com.flycast.emulator", preset?.targetComponent?.packageName)
         assertEquals("com.flycast.emulator.MainActivity", preset?.targetComponent?.className)
     }
@@ -89,14 +89,14 @@ class BridgePresetTest {
         val targetIntent =
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
-                targetComponent = requireNotNull(BridgePresets.flycast.targetComponent),
-                targetAction = BridgePresets.flycast.targetAction,
+                targetComponent = requireNotNull(PresetBridges.flycast.targetComponent),
+                targetAction = PresetBridges.flycast.targetAction,
                 inputPath = inputPath,
                 selectedEntry = selectedEntry,
             )
 
         assertEquals(Intent.ACTION_VIEW, targetIntent.action)
-        assertEquals(BridgePresets.flycast.targetComponent, targetIntent.component)
+        assertEquals(PresetBridges.flycast.targetComponent, targetIntent.component)
         assertEquals(selectedEntry, targetIntent.data.toString())
     }
 }
