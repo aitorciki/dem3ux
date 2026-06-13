@@ -53,11 +53,11 @@ class PresetBridgeTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = requireNotNull(PresetBridges.duckStation.targetComponent),
-                targetAction = PresetBridges.duckStation.targetAction,
                 inputPath = inputPath,
                 selectedEntry = selectedEntry,
             )
 
+        assertNull(targetIntent.action)
         assertEquals(PresetBridges.duckStation.targetComponent, targetIntent.component)
         assertEquals(selectedEntry, targetIntent.getStringExtra("bootPath"))
         assertEquals(false, targetIntent.getBooleanExtra("resumeState", true))
@@ -126,13 +126,13 @@ class PresetBridgeTest {
     fun `Flycast preset uses selected entry as target data with view action`() {
         val inputPath = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fdc%2FGame.m3u"
         val selectedEntry = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fdc%2FDisc%201.chd"
-        val sourceIntent = Intent().setData(inputPath.toUri())
+        val sourceIntent = Intent(Intent.ACTION_VIEW).setData(inputPath.toUri())
 
         val targetIntent =
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = requireNotNull(PresetBridges.flycast.targetComponent),
-                targetAction = PresetBridges.flycast.targetAction,
+                targetAction = sourceIntent.action,
                 inputPath = inputPath,
                 selectedEntry = selectedEntry,
             )

@@ -7,20 +7,17 @@ data class PresetBridge(
     val id: String,
     val aliasClassName: String,
     val targetActivities: List<String>,
-    val targetAction: String? = null,
     val inputExtraKey: String? = null,
 ) {
     constructor(
         id: String,
         aliasClassName: String,
         targetActivity: String,
-        targetAction: String? = null,
         inputExtraKey: String? = null,
     ) : this(
         id = id,
         aliasClassName = aliasClassName,
         targetActivities = listOf(targetActivity),
-        targetAction = targetAction,
         inputExtraKey = inputExtraKey,
     )
 
@@ -61,7 +58,6 @@ object PresetBridges {
                         "com.flycast.emulator/com.flycast.emulator.MainActivity",
                         "com.flycast.emulator/com.reicast.emulator.MainActivity",
                     ),
-                targetAction = Intent.ACTION_VIEW,
             ),
         )
 

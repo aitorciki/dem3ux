@@ -31,7 +31,7 @@ Known ES-DE DuckStation activity:
 com.github.stenzek.duckstation/.EmulationActivity
 ```
 
-Flycast has also been manually validated through the generic bridge path when the target action is forwarded with `dem3ux.target.action`.
+Flycast has also been manually validated through the generic bridge path when the frontend-provided `android.intent.action.VIEW` action is preserved.
 
 ## Engineering Priorities
 
@@ -54,7 +54,7 @@ Current preset direction:
 - Keep aliases explicit in the manifest; Android cannot expose runtime-generated activity names.
 - Preserve the emulator's native intent shape where possible, examples:
   - For DuckStation, read input from the native `bootPath` extra and forward `bootPath` with the selected entry.
-  - For Flycast, read input from intent data and launch the real activity with `android.intent.action.VIEW` plus selected entry as target data.
+  - For Flycast, read input from intent data, preserve the frontend-provided `android.intent.action.VIEW`, and launch the real activity with the selected entry as target data.
 - ES-DE preset integration should prefer overriding `es_find_rules.xml` emulator package rules over copying full `es_systems.xml` entries when possible.
 
 ## Bridge Contract
@@ -66,7 +66,7 @@ Current contract:
 - The bridge input ROM path or URI is `Intent.data`.
 - Do not reintroduce `dem3ux.input.path` unless there is a concrete frontend that cannot provide data.
 - `dem3ux.target.activity` is required and must be a flattened Android component string, such as `com.github.stenzek.duckstation/.EmulationActivity`.
-- `dem3ux.target.action` is optional and sets the action on the target emulator intent.
+- Preserve the frontend-provided `Intent.action` on the target emulator intent.
 - All extras whose keys do not start with `dem3ux.` are target-emulator extras and should be forwarded unchanged by key.
 - If a forwarded string extra or string-array item equals the bridge input, replace it with the selected playlist entry before launching the target.
 - If no forwarded emulator extra consumes the bridge input, set the target intent data to the selected entry.
@@ -157,9 +157,7 @@ Relevant variables include:
 
 Keep README examples clearly labeled as examples, not as the only supported frontend contract.
 
-ES-DE has been validated launching DuckStation through dem3ux using SAF URIs for both `.m3u` playlists and direct image paths.
-
-Native ES-DE `%ACTION%` applies to ES-DE launching dem3ux. If the target emulator needs an action, pass it as `%EXTRA_dem3ux.target.action%=...`.
+ES-DE has been validated launching DuckStation through dem3ux using SAF URIs for both `.m3u` playlists and direct image paths. Native ES-DE `%ACTION%` applies to ES-DE launching dem3ux and dem3ux preserves that action when launching the target emulator.
 
 ## Daijishou Notes
 

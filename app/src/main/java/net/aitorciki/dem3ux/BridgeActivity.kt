@@ -17,6 +17,7 @@ class BridgeActivity : BaseBridgeActivity() {
         return BridgeLaunch(
             inputPath = inputPath,
             targetComponent = targetComponent,
+            targetAction = sourceIntent.action,
         )
     }
 }

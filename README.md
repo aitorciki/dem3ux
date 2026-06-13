@@ -50,7 +50,7 @@ When launched as a regular Android app, dem3ux provides a small management UI:
 
 ## Frontend Integration
 
-Any frontend that uses Android intents to launch emulators should work with dem3ux, because dem3ux forwards the intent data, extras, and common activity flags it receives from the frontend to the emulator.
+Any frontend that uses Android intents to launch emulators should work with dem3ux, because dem3ux forwards the intent action, intent data, extras, and common activity flags it receives from the frontend to the emulator.
 
 Frontends must be configured to use dem3ux's bridge activity instead of the emulator activity:
 
@@ -62,7 +62,6 @@ The frontend must also provide the required parameters to identify the target em
 
 - Intent `data` (required) is the input playlist/game path or URI. Playlist inputs are demuxed; non-playlist inputs are proxied unchanged. **Important:** this is required even for emulators that expect the input ROM as an extra (e.g. DuckStation): dem3ux needs to read the playlist to parse it, and relies on the intent data for this step.
 - `dem3ux.target.activity` extra (required): target emulator activity as a flattened Android component string, such as `com.github.stenzek.duckstation/.EmulationActivity`.
-- `dem3ux.target.action` extra (optional): target emulator intent action.
 
 All non-`dem3ux.` extras are forwarded to the target emulator under their original names. dem3ux also forwards common activity flags such as clear task, clear top, and no history.
 
@@ -106,7 +105,7 @@ Flycast can use the same preset approach. This keeps ES-DE's bundled Flycast com
 </emulator>
 ```
 
-The preset bridge reads the input from intent data, demuxes `.m3u` and `.m3u8` inputs, and launches the real Flycast activity with `android.intent.action.VIEW` and the selected entry as target intent data. Direct non-playlist images are proxied unchanged.
+The preset bridge reads the input from intent data, preserves ES-DE's `android.intent.action.VIEW` action, demuxes `.m3u` and `.m3u8` inputs, and launches the real Flycast activity with the selected entry as target intent data. Direct non-playlist images are proxied unchanged.
 
 #### dem3ux Emulator Rule
 
@@ -168,7 +167,7 @@ and
 The resulting custom command becomes:
 
 ```xml
-<command label="Flycast (dem3ux)">%EMULATOR_DEM3UX% %DATA%=%ROMSAF% %EXTRA_dem3ux.target.activity%=com.flycast.emulator/com.flycast.emulator.MainActivity %EXTRA_dem3ux.target.action%=android.intent.action.VIEW</command>
+<command label="Flycast (dem3ux)">%EMULATOR_DEM3UX% %ACTION%=android.intent.action.VIEW %DATA%=%ROMSAF% %EXTRA_dem3ux.target.activity%=com.flycast.emulator/com.flycast.emulator.MainActivity</command>
 ```
 
 ### Daijishō Example
@@ -214,11 +213,9 @@ The expected dem3ux variant is:
 -a android.intent.action.VIEW
 -d {file.uri}
 -e dem3ux.target.activity com.flycast.emulator/com.flycast.emulator.MainActivity
--e dem3ux.target.action android.intent.action.VIEW
 ```
 
-- `-a android.intent.action.VIEW` applies to Daijishō launching dem3ux.
-- `-e dem3ux.target.action android.intent.action.VIEW` tells dem3ux to apply the same action when launching Flycast.
+- `-a android.intent.action.VIEW` applies to Daijishō launching dem3ux, and dem3ux preserves it when launching Flycast.
 - Because no forwarded emulator extra consumes the input URI, dem3ux sets the target intent data to the selected or proxied URI.
 
 ## Development

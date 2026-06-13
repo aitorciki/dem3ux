@@ -13,9 +13,8 @@ object BridgeTargetIntentFactory {
         inputPath: String,
         selectedEntry: String,
     ): Intent {
-        val resolvedTargetAction = targetAction ?: sourceIntent.getStringExtra(BridgeContract.EXTRA_TARGET_ACTION)
         val targetIntent =
-            Intent(resolvedTargetAction).apply {
+            Intent(targetAction).apply {
                 component = targetComponent
                 addFlags(sourceIntent.flags and PROXIED_ACTIVITY_FLAGS)
                 sourceIntent.categories.orEmpty().forEach(::addCategory)

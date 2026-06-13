@@ -23,9 +23,8 @@ class BridgeTargetIntentFactoryTest {
         val inputPath = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fpsx%2FGame.m3u"
         val selectedEntry = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fpsx%2FDisc%201.chd"
         val sourceIntent =
-            Intent()
+            Intent(Intent.ACTION_VIEW)
                 .setData(inputPath.toUri())
-                .putExtra(BridgeContract.EXTRA_TARGET_ACTION, Intent.ACTION_VIEW)
                 .putExtra("bootPath", inputPath)
                 .putExtra("resumeState", false)
                 .putExtra("slot", 1)
@@ -35,6 +34,7 @@ class BridgeTargetIntentFactoryTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
+                targetAction = sourceIntent.action,
                 inputPath = inputPath,
                 selectedEntry = selectedEntry,
             )
@@ -128,7 +128,7 @@ class BridgeTargetIntentFactoryTest {
         val sourceIntent =
             Intent()
                 .putExtra(BridgeContract.EXTRA_TARGET_ACTIVITY, "com.github.stenzek.duckstation/.EmulationActivity")
-                .putExtra(BridgeContract.EXTRA_TARGET_ACTION, Intent.ACTION_VIEW)
+                .putExtra("dem3ux.test", "reserved")
 
         val targetIntent =
             BridgeTargetIntentFactory.build(
@@ -139,7 +139,7 @@ class BridgeTargetIntentFactoryTest {
             )
 
         assertFalse(targetIntent.hasExtra(BridgeContract.EXTRA_TARGET_ACTIVITY))
-        assertFalse(targetIntent.hasExtra(BridgeContract.EXTRA_TARGET_ACTION))
+        assertFalse(targetIntent.hasExtra("dem3ux.test"))
     }
 
     @Test

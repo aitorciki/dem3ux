@@ -17,7 +17,7 @@ class PresetBridgeActivity : BaseBridgeActivity() {
         return BridgeLaunch(
             inputPath = inputPath,
             targetComponents = targetComponents,
-            targetAction = preset.targetAction,
+            targetAction = sourceIntent.action,
         )
     }
 }
