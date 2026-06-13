@@ -18,6 +18,7 @@ object BridgeTargetIntentFactory {
             Intent(resolvedTargetAction).apply {
                 component = targetComponent
                 addFlags(sourceIntent.flags and PROXIED_ACTIVITY_FLAGS)
+                sourceIntent.categories.orEmpty().forEach(::addCategory)
             }
 
         var replacedInputPath = false

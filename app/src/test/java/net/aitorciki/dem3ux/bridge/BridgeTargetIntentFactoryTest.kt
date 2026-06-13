@@ -175,4 +175,22 @@ class BridgeTargetIntentFactoryTest {
 
         assertEquals(0, targetIntent.flags and Intent.FLAG_ACTIVITY_NEW_TASK)
     }
+
+    @Test
+    fun `proxies source intent categories`() {
+        val sourceIntent =
+            Intent()
+                .addCategory(Intent.CATEGORY_LEANBACK_LAUNCHER)
+        val selectedEntry = "/storage/emulated/0/roms/gc/Game.iso"
+
+        val targetIntent =
+            BridgeTargetIntentFactory.build(
+                sourceIntent = sourceIntent,
+                targetComponent = targetComponent,
+                inputPath = "/storage/emulated/0/roms/gc/Game.m3u",
+                selectedEntry = selectedEntry,
+            )
+
+        assertEquals(setOf(Intent.CATEGORY_LEANBACK_LAUNCHER), targetIntent.categories)
+    }
 }
