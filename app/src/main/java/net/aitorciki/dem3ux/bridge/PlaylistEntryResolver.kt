@@ -9,6 +9,9 @@ import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
 object PlaylistEntryResolver {
+    private const val ES_DE_FILE_PROVIDER_AUTHORITY = "org.es_de.frontend.files"
+    private const val EXTERNAL_STORAGE_AUTHORITY = "com.android.externalstorage.documents"
+
     fun resolveEntries(
         sourcePath: String,
         content: String,
@@ -77,7 +80,10 @@ object PlaylistEntryResolver {
         }
 
         val sourceUri = URI(sourcePath)
-        if (sourceUri.authority != "com.android.externalstorage.documents") {
+        if (sourceUri.authority == ES_DE_FILE_PROVIDER_AUTHORITY) {
+            return resolveEsDeFileProviderUri(sourceUri, entryPath) ?: entryPath
+        }
+        if (sourceUri.authority != EXTERNAL_STORAGE_AUTHORITY) {
             return entryPath
         }
 
@@ -99,6 +105,23 @@ object PlaylistEntryResolver {
                 .replace("+", "%20")
 
         return "${sourceUri.scheme}://${sourceUri.authority}/document/$encodedResolvedDocumentId"
+    }
+
+    private fun resolveEsDeFileProviderUri(
+        sourceUri: URI,
+        entryPath: String,
+    ): String? {
+        val providerPath = sourceUri.rawPath?.decodeUrl() ?: return null
+        val externalPath = providerPath.removePrefix("/external/")
+        if (externalPath == providerPath) {
+            return null
+        }
+
+        val parentPath = externalPath.substringBeforeLast('/', missingDelimiterValue = "")
+        val resolvedPath = normalizePath(listOf(parentPath, entryPath).filter(String::isNotEmpty).joinToString("/"))
+        val resolvedDocumentId = "primary:$resolvedPath"
+
+        return "content://$EXTERNAL_STORAGE_AUTHORITY/document/${resolvedDocumentId.encodeUrl()}"
     }
 
     private fun normalizePath(path: String): String {
@@ -126,4 +149,11 @@ object PlaylistEntryResolver {
 
         return normalizedSegments.joinToString("/")
     }
+
+    private fun String.decodeUrl(): String = URLDecoder.decode(this, StandardCharsets.UTF_8.name())
+
+    private fun String.encodeUrl(): String =
+        URLEncoder
+            .encode(this, StandardCharsets.UTF_8.name())
+            .replace("+", "%20")
 }

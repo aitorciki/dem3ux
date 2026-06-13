@@ -83,4 +83,34 @@ class PlaylistEntryResolverTest {
             entries.first().resolvedPath,
         )
     }
+
+    @Test
+    fun `ES-DE file provider uri input resolves relative entries as external storage document uris`() {
+        val entries =
+            PlaylistEntryResolver.resolveEntries(
+                sourcePath = "content://org.es_de.frontend.files/external/Documents/roms/gb/zelda.m3u",
+                content = "zelda.gb",
+            )
+
+        assertEquals(
+            "content://com.android.externalstorage.documents/document/" +
+                "primary%3ADocuments%2Froms%2Fgb%2Fzelda.gb",
+            entries.first().resolvedPath,
+        )
+    }
+
+    @Test
+    fun `ES-DE file provider uri input normalizes relative dot segments`() {
+        val entries =
+            PlaylistEntryResolver.resolveEntries(
+                sourcePath = "content://org.es_de.frontend.files/external/Documents/roms/gb/playlists/zelda.m3u",
+                content = "../zelda/zelda.gb",
+            )
+
+        assertEquals(
+            "content://com.android.externalstorage.documents/document/" +
+                "primary%3ADocuments%2Froms%2Fgb%2Fzelda%2Fzelda.gb",
+            entries.first().resolvedPath,
+        )
+    }
 }

@@ -125,6 +125,7 @@ Treat path and URI conversion as core domain logic.
 - Preserve the input path family where practical: filesystem path in, filesystem path out; `file://` in, `file://` out; SAF/content URI in, SAF/content URI out.
 - For Android external-storage SAF URIs, dem3ux may need to request and persist a ROM-folder tree grant before reading playlists or forwarding selected entries.
 - Map external-storage document URIs through matching persisted tree grants before reading or forwarding them.
+- ES-DE FileProvider `%ROMPROVIDER%` inputs should be proxied unchanged for direct non-playlist files. For path-shaped provider playlist URIs such as `/external/...`, dem3ux may read the playlist through ES-DE's temporary grant and resolve selected entries as external-storage SAF document URIs; do not try to mint sibling ES-DE FileProvider URIs.
 - Do not assume a temporary grant from a frontend is enough for dem3ux to read an `.m3u` or grant the selected entry onward.
 
 ## Testing
@@ -152,7 +153,7 @@ Relevant variables include:
 - `%EXTRA_key%=value` for string extras.
 - `%ROM%` for absolute paths.
 - `%ROMSAF%` for SAF URIs.
-- `%ROMPROVIDER%` for ES-DE FileProvider URIs.
+- `%ROMPROVIDER%` for ES-DE FileProvider URIs. Direct provider ROMs and path-shaped provider playlist URIs can be handled; selected playlist entries are forwarded as SAF URIs.
 - `%ROMRAW%`, `%GAMEDIRRAW%`, `%ROMPATHRAW%`, `%BASENAME%` for raw path-derived values.
 
 Keep README examples clearly labeled as examples, not as the only supported frontend contract.

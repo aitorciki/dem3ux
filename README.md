@@ -107,6 +107,8 @@ Flycast can use the same preset approach. This keeps ES-DE's bundled Flycast com
 
 The preset bridge reads the input from intent data, preserves ES-DE's `android.intent.action.VIEW` action, demuxes `.m3u` and `.m3u8` inputs, and launches the real Flycast activity with the selected entry as target intent data. Direct non-playlist images are proxied unchanged.
 
+Direct non-playlist `%ROMPROVIDER%` inputs are forwarded unchanged. For `.m3u` and `.m3u8` inputs, dem3ux can read path-shaped ES-DE FileProvider playlist URIs through ES-DE's temporary grant, resolve relative entries from the provider path, and forward the selected entry as an external-storage SAF URI. dem3ux does not create new ES-DE FileProvider URIs for sibling files, and opaque provider URIs that do not expose an external-storage path cannot be demuxed this way.
+
 #### dem3ux Emulator Rule
 
 This custom `es_find_rules.xml` entry lets ES-DE resolve dem3ux as an Android launch target:
