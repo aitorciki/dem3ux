@@ -78,6 +78,22 @@ ES-DE Android uses two relevant configuration files that must be placed in the `
 > [!NOTE]
 > When creating an entry for a system in the custom `es_systems.xml`, the complete `<system>` entry from the [default list](https://gitlab.com/es-de/emulationstation-de/-/blob/master/resources/systems/android/es_systems.xml) must be copied: new command entries cannot be added to an existing system, the whole system needs to be replaced.
 
+#### DuckStation Preset Rule
+
+For DuckStation, dem3ux can impersonate ES-DE's `DUCKSTATION` Android package rule. This keeps ES-DE's bundled `DuckStation (Standalone)` command unchanged, so only `es_find_rules.xml` needs a custom override:
+
+```xml
+<emulator name="DUCKSTATION">
+    <rule type="androidpackage">
+        <entry>net.aitorciki.dem3ux/.presets.DuckStationBridgeActivity</entry>
+    </rule>
+</emulator>
+```
+
+The preset bridge reads DuckStation's native `bootPath` extra, demuxes `.m3u` and `.m3u8` inputs, and launches the real DuckStation activity with `bootPath` replaced by the selected playlist entry. Direct non-playlist images are proxied unchanged.
+
+This preset is the preferred ES-DE DuckStation integration path once validated on your device. The generic bridge configuration below remains useful for unsupported emulators or manual testing.
+
 #### dem3ux Emulator Rule
 
 This custom `es_find_rules.xml` entry lets ES-DE resolve dem3ux as an Android launch target:
@@ -91,6 +107,8 @@ This custom `es_find_rules.xml` entry lets ES-DE resolve dem3ux as an Android la
 ```
 
 #### DuckStation Through dem3ux
+
+The generic bridge path below is still supported, but the preset rule above avoids copying the full ES-DE system definition just to replace DuckStation.
 
 The default [`es_find_rules.xml`](https://gitlab.com/es-de/emulationstation-de/-/blob/master/resources/systems/android/es_find_rules.xml) and [`es_systems.xml`](https://gitlab.com/es-de/emulationstation-de/-/blob/master/resources/systems/android/es_systems.xml) entries for `DuckStation (Standalone)` are:
 

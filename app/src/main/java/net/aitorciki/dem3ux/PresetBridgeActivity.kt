@@ -1,14 +1,13 @@
 package net.aitorciki.dem3ux
 
-import android.content.ComponentName
 import android.content.Intent
-import net.aitorciki.dem3ux.bridge.BridgeContract
+import net.aitorciki.dem3ux.bridge.BridgePresets
 
-class BridgeActivity : BaseBridgeActivity() {
+class PresetBridgeActivity : BaseBridgeActivity() {
     override fun createBridgeLaunch(sourceIntent: Intent): BridgeLaunch? {
-        val targetActivity = sourceIntent.getStringExtra(BridgeContract.EXTRA_TARGET_ACTIVITY)
-        val inputPath = sourceIntent.dataString
-        val targetComponent = targetActivity?.let(ComponentName::unflattenFromString)
+        val preset = BridgePresets.fromAliasClassName(componentName.className) ?: BridgePresets.duckStation
+        val inputPath = preset.inputPathFrom(sourceIntent)
+        val targetComponent = preset.targetComponent
 
         if (targetComponent == null || inputPath.isNullOrBlank()) {
             return null
@@ -17,6 +16,7 @@ class BridgeActivity : BaseBridgeActivity() {
         return BridgeLaunch(
             inputPath = inputPath,
             targetComponent = targetComponent,
+            targetAction = preset.targetAction,
         )
     }
 }

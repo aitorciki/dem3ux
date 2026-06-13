@@ -9,11 +9,13 @@ object BridgeTargetIntentFactory {
     fun build(
         sourceIntent: Intent,
         targetComponent: ComponentName,
+        targetAction: String? = null,
         inputPath: String,
         selectedEntry: String,
     ): Intent {
+        val resolvedTargetAction = targetAction ?: sourceIntent.getStringExtra(BridgeContract.EXTRA_TARGET_ACTION)
         val targetIntent =
-            Intent(sourceIntent.getStringExtra(BridgeContract.EXTRA_TARGET_ACTION)).apply {
+            Intent(resolvedTargetAction).apply {
                 component = targetComponent
                 addFlags(sourceIntent.flags and PROXIED_ACTIVITY_FLAGS)
             }

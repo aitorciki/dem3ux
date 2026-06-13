@@ -42,7 +42,18 @@ Flycast has also been manually validated through the generic bridge path when th
 - Add emulator compatibility incrementally, one verified target at a time.
 - Prefer explicit package/activity launches over broad implicit intents when handing off to emulators.
 - Avoid compatibility abstractions until at least one emulator works end-to-end.
-- Do not add emulator profiles yet. Mirror the frontend/emulator intent shape and keep the bridge generic until repeated patterns justify profiles.
+- Keep the generic bridge path available even when preset bridge aliases are available.
+
+## Preset Bridge Aliases
+
+Preset aliases let a frontend launch dem3ux as if it were a known emulator, while dem3ux launches the real emulator after selecting the correct playlist entry.
+
+Current preset direction:
+
+- Use one real `PresetBridgeActivity` plus manifest `activity-alias` entries such as `.presets.DuckStationBridgeActivity`.
+- Keep aliases explicit in the manifest; Android cannot expose runtime-generated activity names.
+- Preserve the emulator's native intent shape where possible. For DuckStation, read input from the native `bootPath` extra and forward `bootPath` with the selected entry.
+- ES-DE preset integration should prefer overriding `es_find_rules.xml` emulator package rules over copying full `es_systems.xml` entries when possible.
 
 ## Bridge Contract
 
