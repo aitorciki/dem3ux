@@ -9,6 +9,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Dem3ux">
         <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <activity
             android:name=".BridgeActivity"
             android:exported="true"
             android:excludeFromRecents="true"
@@ -25,30 +33,12 @@
             android:taskAffinity="" />
         <activity-alias
             android:name=".presets.DuckStationBridgeActivity"
-            android:exported="true"
-            android:targetActivity=".PresetBridgeActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity-alias>
+            android:targetActivity=".PresetBridgeActivity"
+            android:exported="true" />
         <activity-alias
             android:name=".presets.FlycastBridgeActivity"
-            android:exported="true"
-            android:targetActivity=".PresetBridgeActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-            </intent-filter>
-        </activity-alias>
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
+            android:targetActivity=".PresetBridgeActivity"
+            android:exported="true" />
     </application>
 
 </manifest>
