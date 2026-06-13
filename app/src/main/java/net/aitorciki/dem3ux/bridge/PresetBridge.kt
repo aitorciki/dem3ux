@@ -6,11 +6,26 @@ import android.content.Intent
 data class PresetBridge(
     val id: String,
     val aliasClassName: String,
-    val targetActivity: String,
+    val targetActivities: List<String>,
     val targetAction: String? = null,
     val inputExtraKey: String? = null,
 ) {
-    val targetComponent: ComponentName? = ComponentName.unflattenFromString(targetActivity)
+    constructor(
+        id: String,
+        aliasClassName: String,
+        targetActivity: String,
+        targetAction: String? = null,
+        inputExtraKey: String? = null,
+    ) : this(
+        id = id,
+        aliasClassName = aliasClassName,
+        targetActivities = listOf(targetActivity),
+        targetAction = targetAction,
+        inputExtraKey = inputExtraKey,
+    )
+
+    val targetComponents: List<ComponentName> = targetActivities.mapNotNull(ComponentName::unflattenFromString)
+    val targetComponent: ComponentName? = targetComponents.firstOrNull()
 
     fun inputPathFrom(sourceIntent: Intent): String? =
         if (inputExtraKey == null) {
@@ -18,6 +33,9 @@ data class PresetBridge(
         } else {
             sourceIntent.getStringExtra(inputExtraKey)
         }
+
+    fun resolveTargetComponent(isTargetInstalled: (ComponentName) -> Boolean): ComponentName? =
+        targetComponents.firstOrNull(isTargetInstalled)
 }
 
 object PresetBridges {
@@ -38,7 +56,11 @@ object PresetBridges {
             PresetBridge(
                 id = "flycast",
                 aliasClassName = "net.aitorciki.dem3ux.presets.FlycastBridgeActivity",
-                targetActivity = "com.flycast.emulator/com.flycast.emulator.MainActivity",
+                targetActivities =
+                    listOf(
+                        "com.flycast.emulator/com.flycast.emulator.MainActivity",
+                        "com.flycast.emulator/com.reicast.emulator.MainActivity",
+                    ),
                 targetAction = Intent.ACTION_VIEW,
             ),
         )

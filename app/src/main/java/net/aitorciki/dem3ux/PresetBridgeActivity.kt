@@ -5,17 +5,18 @@ import net.aitorciki.dem3ux.bridge.PresetBridges
 
 class PresetBridgeActivity : BaseBridgeActivity() {
     override fun createBridgeLaunch(sourceIntent: Intent): BridgeLaunch? {
-        val preset = PresetBridges.fromAliasClassName(componentName.className) ?: PresetBridges.duckStation
+        val aliasClassName = sourceIntent.component?.className ?: componentName.className
+        val preset = PresetBridges.fromAliasClassName(aliasClassName) ?: PresetBridges.duckStation
         val inputPath = preset.inputPathFrom(sourceIntent)
-        val targetComponent = preset.targetComponent
+        val targetComponents = preset.targetComponents
 
-        if (targetComponent == null || inputPath.isNullOrBlank()) {
+        if (targetComponents.isEmpty() || inputPath.isNullOrBlank()) {
             return null
         }
 
         return BridgeLaunch(
             inputPath = inputPath,
-            targetComponent = targetComponent,
+            targetComponents = targetComponents,
             targetAction = preset.targetAction,
         )
     }

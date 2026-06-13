@@ -1,5 +1,6 @@
 package net.aitorciki.dem3ux.bridge
 
+import android.content.ComponentName
 import android.content.Intent
 import androidx.core.net.toUri
 import org.junit.Assert.assertEquals
@@ -78,6 +79,47 @@ class PresetBridgeTest {
         assertEquals(PresetBridges.flycast, preset)
         assertEquals("com.flycast.emulator", preset?.targetComponent?.packageName)
         assertEquals("com.flycast.emulator.MainActivity", preset?.targetComponent?.className)
+    }
+
+    @Test
+    fun `Flycast preset resolves first installed target candidate`() {
+        val targetComponent =
+            PresetBridges.flycast.resolveTargetComponent { component ->
+                component.className == "com.flycast.emulator.MainActivity"
+            }
+
+        assertEquals("com.flycast.emulator.MainActivity", targetComponent?.className)
+    }
+
+    @Test
+    fun `Flycast preset falls back to second installed target candidate`() {
+        val targetComponent =
+            PresetBridges.flycast.resolveTargetComponent { component ->
+                component.className == "com.reicast.emulator.MainActivity"
+            }
+
+        assertEquals("com.reicast.emulator.MainActivity", targetComponent?.className)
+    }
+
+    @Test
+    fun `Flycast preset returns null when no target candidate is installed`() {
+        assertNull(PresetBridges.flycast.resolveTargetComponent { false })
+    }
+
+    @Test
+    fun `preset ignores invalid target candidate entries`() {
+        val preset =
+            PresetBridge(
+                id = "test",
+                aliasClassName = "net.aitorciki.dem3ux.presets.TestBridgeActivity",
+                targetActivities =
+                    listOf(
+                        "not-a-flattened-component",
+                        "com.example/.TargetActivity",
+                    ),
+            )
+
+        assertEquals(ComponentName("com.example", "com.example.TargetActivity"), preset.targetComponent)
     }
 
     @Test

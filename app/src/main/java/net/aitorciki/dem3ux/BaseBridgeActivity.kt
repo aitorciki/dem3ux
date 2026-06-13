@@ -1,5 +1,6 @@
 package net.aitorciki.dem3ux
 
+import android.content.ActivityNotFoundException
 import android.content.ComponentName
 import android.content.Intent
 import android.os.Bundle
@@ -97,21 +98,44 @@ abstract class BaseBridgeActivity : ComponentActivity() {
 
             val grantableSelectedEntry = selectedEntry.mapThroughPersistedTreeGrant()
 
+            launchTargetEmulator(
+                bridgeLaunch = bridgeLaunch,
+                inputPath = inputPath,
+                selectedEntry = grantableSelectedEntry,
+            )
+            finish()
+        }
+    }
+
+    private fun launchTargetEmulator(
+        bridgeLaunch: BridgeLaunch,
+        inputPath: String,
+        selectedEntry: String,
+    ) {
+        var lastActivityNotFound: ActivityNotFoundException? = null
+
+        bridgeLaunch.targetComponents.forEach { targetComponent ->
             val targetIntent =
                 BridgeTargetIntentFactory.build(
                     sourceIntent = intent,
-                    targetComponent = bridgeLaunch.targetComponent,
+                    targetComponent = targetComponent,
                     targetAction = bridgeLaunch.targetAction,
                     inputPath = inputPath,
-                    selectedEntry = grantableSelectedEntry,
+                    selectedEntry = selectedEntry,
                 )
-            runCatching {
+
+            try {
                 startActivity(targetIntent)
-            }.onFailure { error ->
+                return
+            } catch (error: ActivityNotFoundException) {
+                lastActivityNotFound = error
+            } catch (error: Throwable) {
                 logBridgeFailure("Failed to launch target emulator.", error)
+                return
             }
-            finish()
         }
+
+        logBridgeFailure("Failed to launch target emulator.", lastActivityNotFound)
     }
 
     private fun requestFolderAccessAndRetry(bridgeLaunch: BridgeLaunch) {
@@ -192,10 +216,22 @@ abstract class BaseBridgeActivity : ComponentActivity() {
 
     protected data class BridgeLaunch(
         val inputPath: String,
-        val targetComponent: ComponentName,
+        val targetComponents: List<ComponentName>,
         val targetAction: String? = null,
         val requestedFolderAccess: Boolean = false,
-    )
+    ) {
+        constructor(
+            inputPath: String,
+            targetComponent: ComponentName,
+            targetAction: String? = null,
+            requestedFolderAccess: Boolean = false,
+        ) : this(
+            inputPath = inputPath,
+            targetComponents = listOf(targetComponent),
+            targetAction = targetAction,
+            requestedFolderAccess = requestedFolderAccess,
+        )
+    }
 
     private data class PlaylistContentResult(
         val content: String? = null,
