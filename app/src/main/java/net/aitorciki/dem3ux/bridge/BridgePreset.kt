@@ -21,14 +21,33 @@ data class BridgePreset(
 }
 
 object BridgePresets {
+    private val presets = mutableListOf<BridgePreset>()
+
     val duckStation =
-        BridgePreset(
-            id = "duckstation",
-            aliasClassName = "net.aitorciki.dem3ux.presets.DuckStationBridgeActivity",
-            targetActivity = "com.github.stenzek.duckstation/.EmulationActivity",
-            inputExtraKey = "bootPath",
+        preset(
+            BridgePreset(
+                id = "duckstation",
+                aliasClassName = "net.aitorciki.dem3ux.presets.DuckStationBridgeActivity",
+                targetActivity = "com.github.stenzek.duckstation/.EmulationActivity",
+                inputExtraKey = "bootPath",
+            ),
         )
 
-    fun fromAliasClassName(className: String): BridgePreset? =
-        listOf(duckStation).firstOrNull { preset -> preset.aliasClassName == className }
+    val flycast =
+        preset(
+            BridgePreset(
+                id = "flycast",
+                aliasClassName = "net.aitorciki.dem3ux.presets.FlycastBridgeActivity",
+                targetActivity = "com.flycast.emulator/com.flycast.emulator.MainActivity",
+                targetAction = Intent.ACTION_VIEW,
+            ),
+        )
+
+    private val presetsByAliasClassName by lazy {
+        presets.associateBy { preset -> preset.aliasClassName }
+    }
+
+    fun fromAliasClassName(className: String): BridgePreset? = presetsByAliasClassName[className]
+
+    private fun preset(preset: BridgePreset): BridgePreset = preset.also { registeredPreset -> presets += registeredPreset }
 }

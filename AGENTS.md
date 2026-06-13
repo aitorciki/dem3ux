@@ -52,7 +52,9 @@ Current preset direction:
 
 - Use one real `PresetBridgeActivity` plus manifest `activity-alias` entries such as `.presets.DuckStationBridgeActivity`.
 - Keep aliases explicit in the manifest; Android cannot expose runtime-generated activity names.
-- Preserve the emulator's native intent shape where possible. For DuckStation, read input from the native `bootPath` extra and forward `bootPath` with the selected entry.
+- Preserve the emulator's native intent shape where possible, examples:
+  - For DuckStation, read input from the native `bootPath` extra and forward `bootPath` with the selected entry.
+  - For Flycast, read input from intent data and launch the real activity with `android.intent.action.VIEW` plus selected entry as target data.
 - ES-DE preset integration should prefer overriding `es_find_rules.xml` emulator package rules over copying full `es_systems.xml` entries when possible.
 
 ## Bridge Contract

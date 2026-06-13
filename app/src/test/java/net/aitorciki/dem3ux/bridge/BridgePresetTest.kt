@@ -62,4 +62,41 @@ class BridgePresetTest {
         assertEquals(false, targetIntent.getBooleanExtra("resumeState", true))
         assertNull(targetIntent.data)
     }
+
+    @Test
+    fun `Flycast preset reads bridge input from intent data`() {
+        val inputPath = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fdc%2FGame.m3u"
+        val sourceIntent = Intent().setData(inputPath.toUri())
+
+        assertEquals(inputPath, BridgePresets.flycast.inputPathFrom(sourceIntent))
+    }
+
+    @Test
+    fun `Flycast preset maps alias to real target component`() {
+        val preset = BridgePresets.fromAliasClassName("net.aitorciki.dem3ux.presets.FlycastBridgeActivity")
+
+        assertEquals(BridgePresets.flycast, preset)
+        assertEquals("com.flycast.emulator", preset?.targetComponent?.packageName)
+        assertEquals("com.flycast.emulator.MainActivity", preset?.targetComponent?.className)
+    }
+
+    @Test
+    fun `Flycast preset uses selected entry as target data with view action`() {
+        val inputPath = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fdc%2FGame.m3u"
+        val selectedEntry = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fdc%2FDisc%201.chd"
+        val sourceIntent = Intent().setData(inputPath.toUri())
+
+        val targetIntent =
+            BridgeTargetIntentFactory.build(
+                sourceIntent = sourceIntent,
+                targetComponent = requireNotNull(BridgePresets.flycast.targetComponent),
+                targetAction = BridgePresets.flycast.targetAction,
+                inputPath = inputPath,
+                selectedEntry = selectedEntry,
+            )
+
+        assertEquals(Intent.ACTION_VIEW, targetIntent.action)
+        assertEquals(BridgePresets.flycast.targetComponent, targetIntent.component)
+        assertEquals(selectedEntry, targetIntent.data.toString())
+    }
 }

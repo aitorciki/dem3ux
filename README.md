@@ -94,6 +94,20 @@ The preset bridge reads DuckStation's native `bootPath` extra, demuxes `.m3u` an
 
 This preset is the preferred ES-DE DuckStation integration path once validated on your device. The generic bridge configuration below remains useful for unsupported emulators or manual testing.
 
+#### Flycast Preset Rule
+
+Flycast can use the same preset approach. This keeps ES-DE's bundled Flycast command unchanged while routing `.m3u` handling through dem3ux:
+
+```xml
+<emulator name="FLYCAST">
+    <rule type="androidpackage">
+        <entry>net.aitorciki.dem3ux/.presets.FlycastBridgeActivity</entry>
+    </rule>
+</emulator>
+```
+
+The preset bridge reads the input from intent data, demuxes `.m3u` and `.m3u8` inputs, and launches the real Flycast activity with `android.intent.action.VIEW` and the selected entry as target intent data. Direct non-playlist images are proxied unchanged.
+
 #### dem3ux Emulator Rule
 
 This custom `es_find_rules.xml` entry lets ES-DE resolve dem3ux as an Android launch target:
@@ -136,6 +150,8 @@ The corresponding dem3ux variant launches dem3ux but keeps DuckStation's native 
 - All other extras and common activity flags in the original command entry are copied as-is and forwarded to the emulator activity.
 
 #### Flycast Through dem3ux
+
+The generic bridge path below is still supported, but the preset rule above avoids copying the full ES-DE system definition just to replace Flycast.
 
 Following the same process, Flycast's native ES-DE activity and command are:
 
