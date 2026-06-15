@@ -1,3 +1,7 @@
+import net.aitorciki.dem3ux.build.GenerateBridgePresetManifestTask
+import net.aitorciki.dem3ux.build.GenerateBridgePresetsTask
+import net.aitorciki.dem3ux.build.RefreshBridgePresetsFromEsDeTask
+import net.aitorciki.dem3ux.build.ValidateBridgePresetAliasesTask
 import org.gradle.api.GradleException
 import java.util.Properties
 
@@ -23,6 +27,72 @@ val hasReleaseSigningProperties =
 
 val releaseKeyPassword: String?
     get() = keystoreProperty("keyPassword") ?: keystoreProperty("storePassword")
+
+val bridgePresetCatalogFile = rootProject.file("presets/bridge-presets.json")
+val generatedPresetSourceFile = layout.projectDirectory.file("src/main/java/net/aitorciki/dem3ux/bridge/PresetBridges.kt")
+val generatedPresetManifestFile = layout.buildDirectory.file("generated/bridgePresetManifest/AndroidManifest.xml")
+val esDeSystemsUrl = "https://gitlab.com/es-de/emulationstation-de/-/raw/master/resources/systems/android/es_systems.xml"
+val esDeFindRulesUrl = "https://gitlab.com/es-de/emulationstation-de/-/raw/master/resources/systems/android/es_find_rules.xml"
+
+val refreshBridgePresetsFromEsDe by tasks.registering(RefreshBridgePresetsFromEsDeTask::class) {
+    group = "build"
+    description = "Refreshes presets/bridge-presets.json from ES-DE Android emulator metadata."
+    esSystemsUrl.set(esDeSystemsUrl)
+    esFindRulesUrl.set(esDeFindRulesUrl)
+    catalogFile.set(bridgePresetCatalogFile)
+}
+
+val generateBridgePresets by tasks.registering(GenerateBridgePresetsTask::class) {
+    group = "build"
+    description = "Generates bridge preset registry source from presets/bridge-presets.json."
+    catalogFile.set(bridgePresetCatalogFile)
+    outputFile.set(generatedPresetSourceFile)
+}
+
+val formatGeneratedBridgePresets by tasks.registering {
+    group = "formatting"
+    description = "Generates bridge preset registry source and formats it with Spotless."
+    dependsOn(generateBridgePresets)
+    finalizedBy(rootProject.tasks.named("spotlessApply"))
+}
+
+val generateBridgePresetManifest by tasks.registering(GenerateBridgePresetManifestTask::class) {
+    group = "build"
+    description = "Generates preset activity aliases manifest from presets/bridge-presets.json."
+    catalogFile.set(bridgePresetCatalogFile)
+    manifestFile.set(generatedPresetManifestFile)
+}
+
+val validateBridgePresetAliases by tasks.registering(ValidateBridgePresetAliasesTask::class) {
+    group = "verification"
+    description = "Validates AndroidManifest preset aliases against presets/bridge-presets.json."
+    catalogFile.set(bridgePresetCatalogFile)
+    generatedManifestFile.set(generateBridgePresetManifest.flatMap { task -> task.manifestFile })
+    mainManifestFile.set(file("src/main/AndroidManifest.xml"))
+    dependsOn(generateBridgePresetManifest)
+}
+
+val syncBridgePresets by tasks.registering {
+    group = "build"
+    description = "Refreshes bridge presets from ES-DE, regenerates registry source, and formats it."
+    dependsOn(refreshBridgePresetsFromEsDe, formatGeneratedBridgePresets)
+}
+
+generateBridgePresets {
+    mustRunAfter(refreshBridgePresetsFromEsDe)
+}
+
+formatGeneratedBridgePresets {
+    mustRunAfter(refreshBridgePresetsFromEsDe)
+}
+
+generateBridgePresetManifest {
+    mustRunAfter(refreshBridgePresetsFromEsDe)
+}
+
+rootProject.tasks.named("spotlessApply") {
+    mustRunAfter(formatGeneratedBridgePresets)
+}
 
 gradle.taskGraph.whenReady {
     val releaseArtifactRequested =
@@ -88,6 +158,23 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.sources.manifests.addGeneratedManifestFile(
+            generateBridgePresetManifest,
+            GenerateBridgePresetManifestTask::manifestFile,
+        )
+    }
+}
+
+tasks.named("preBuild") {
+    dependsOn(generateBridgePresetManifest)
+}
+
+tasks.named("lint") {
+    dependsOn(validateBridgePresetAliases)
 }
 
 kotlin {

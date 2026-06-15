@@ -8,15 +8,21 @@ plugins {
 
 spotless {
     kotlin {
-        target("**/*.kt")
+        target(
+            "app/src/**/*.kt",
+        )
         targetExclude("**/build/**/*.kt")
         ktlint(libs.versions.ktlint.get())
     }
 
     kotlinGradle {
-        target("**/*.gradle.kts")
+        target("**/*.gradle.kts", "**/*.main.kts")
         ktlint(libs.versions.ktlint.get())
     }
+}
+
+tasks.named("spotlessKotlin") {
+    mustRunAfter(":app:generateBridgePresets")
 }
 
 tasks.register("verify") {

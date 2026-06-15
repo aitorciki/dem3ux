@@ -1,0 +1,409 @@
+{
+    "presets": [
+        {
+            "id": "aethersx2",
+            "displayName": "Aethersx2",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.Aethersx2BridgeActivity",
+            "targetActivities": [
+                "xyz.aethersx2.android/.EmulationActivity"
+            ],
+            "input": {
+                "type": "extra",
+                "key": "bootPath"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "AETHERSX2"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "armsx2",
+            "displayName": "Armsx2",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.Armsx2BridgeActivity",
+            "targetActivities": [
+                "come.nanodata.armsx2/kr.co.iefriends.pcsx2.MainActivity",
+                "come.nanodata.armsx2.debug/kr.co.iefriends.pcsx2.MainActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "ARMSX2"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "c64-emu",
+            "displayName": "C64 Emu",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.C64EmuBridgeActivity",
+            "targetActivities": [
+                "com.explusalpha.C64Emu/com.imagine.BaseActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "C64-EMU"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "colem",
+            "displayName": "Colem",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.ColemBridgeActivity",
+            "targetActivities": [
+                "com.fms.colem.deluxe/com.fms.emulib.TVActivity",
+                "com.fms.colem/com.fms.emulib.TVActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "COLEM"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "dolphin",
+            "displayName": "Dolphin",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.DolphinBridgeActivity",
+            "targetActivities": [
+                "org.dolphinemu.dolphinemu/.ui.main.TvMainActivity"
+            ],
+            "input": {
+                "type": "extra",
+                "key": "AutoStartFile"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "DOLPHIN"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "dolphin-mmjr",
+            "displayName": "Dolphin Mmjr",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.DolphinMmjrBridgeActivity",
+            "targetActivities": [
+                "org.mm.jr/org.dolphinemu.dolphinemu.ui.main.MainActivity"
+            ],
+            "input": {
+                "type": "extra",
+                "key": "AutoStartFile"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "DOLPHIN-MMJR"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "dolphin-mmjr2",
+            "displayName": "Dolphin Mmjr2",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.DolphinMmjr2BridgeActivity",
+            "targetActivities": [
+                "org.dolphinemu.mmjr/org.dolphinemu.dolphinemu.ui.main.MainActivity"
+            ],
+            "input": {
+                "type": "extra",
+                "key": "AutoStartFile"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "DOLPHIN-MMJR2"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "duckstation",
+            "displayName": "DuckStation",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.DuckStationBridgeActivity",
+            "targetActivities": [
+                "com.github.stenzek.duckstation/.EmulationActivity"
+            ],
+            "input": {
+                "type": "extra",
+                "key": "bootPath"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "DUCKSTATION"
+                }
+            },
+            "status": "validated"
+        },
+        {
+            "id": "emucorex",
+            "displayName": "Emucorex",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.EmucorexBridgeActivity",
+            "targetActivities": [
+                "com.sbro.emucorex/.MainActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "EMUCOREX"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "epsxe",
+            "displayName": "Epsxe",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.EpsxeBridgeActivity",
+            "targetActivities": [
+                "com.epsxe.ePSXe/.ePSXe"
+            ],
+            "input": {
+                "type": "extra",
+                "key": "com.epsxe.ePSXe.isoName"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "EPSXE"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "flycast",
+            "displayName": "Flycast",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.FlycastBridgeActivity",
+            "targetActivities": [
+                "com.flycast.emulator/com.flycast.emulator.MainActivity",
+                "com.flycast.emulator/com.reicast.emulator.MainActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "FLYCAST"
+                }
+            },
+            "status": "validated"
+        },
+        {
+            "id": "fmsx",
+            "displayName": "Fmsx",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.FmsxBridgeActivity",
+            "targetActivities": [
+                "com.fms.fmsx.deluxe/com.fms.emulib.TVActivity",
+                "com.fms.fmsx/com.fms.emulib.TVActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "FMSX"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "fpse",
+            "displayName": "Fpse",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.FpseBridgeActivity",
+            "targetActivities": [
+                "com.emulator.fpse/.Main"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "FPSE"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "fpse-ng",
+            "displayName": "Fpse Ng",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.FpseNgBridgeActivity",
+            "targetActivities": [
+                "com.emulator.fpse64/.Main"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "FPSE-NG"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "mastergear",
+            "displayName": "Mastergear",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.MastergearBridgeActivity",
+            "targetActivities": [
+                "com.fms.mg/com.fms.emulib.TVActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "MASTERGEAR"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "md-emu",
+            "displayName": "Md Emu",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.MdEmuBridgeActivity",
+            "targetActivities": [
+                "com.explusalpha.MdEmu/com.imagine.BaseActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "MD-EMU"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "msx-emu",
+            "displayName": "Msx Emu",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.MsxEmuBridgeActivity",
+            "targetActivities": [
+                "com.explusalpha.MsxEmu/com.imagine.BaseActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "MSX-EMU"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "pce-emu",
+            "displayName": "Pce Emu",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.PceEmuBridgeActivity",
+            "targetActivities": [
+                "com.PceEmu/com.imagine.BaseActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "PCE-EMU"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "pizza-boy-sc",
+            "displayName": "Pizza Boy Sc",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.PizzaBoyScBridgeActivity",
+            "targetActivities": [
+                "it.dbtecno.pizzaboyscpro/.MainActivity",
+                "it.dbtecno.pizzaboyscbasic/.MainActivity"
+            ],
+            "input": {
+                "type": "extra",
+                "key": "rom_uri"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "PIZZA-BOY-SC"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "play",
+            "displayName": "Play",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.PlayBridgeActivity",
+            "targetActivities": [
+                "com.virtualapplications.play/.MainActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "PLAY!"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "redream",
+            "displayName": "Redream",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.RedreamBridgeActivity",
+            "targetActivities": [
+                "io.recompiled.redream/.MainActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "REDREAM"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "saturn-emu",
+            "displayName": "Saturn Emu",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.SaturnEmuBridgeActivity",
+            "targetActivities": [
+                "com.explusalpha.SaturnEmu/com.imagine.BaseActivity"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "SATURN-EMU"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "yabasanshiro-2",
+            "displayName": "Yabasanshiro 2",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.Yabasanshiro2BridgeActivity",
+            "targetActivities": [
+                "org.devmiyax.yabasanshioro2.pro/org.uoyabause.android.Yabause",
+                "org.devmiyax.yabasanshioro2/org.uoyabause.android.Yabause"
+            ],
+            "input": {
+                "type": "extra",
+                "key": "org.uoyabause.android.FileNameUri"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "YABASANSHIRO-2"
+                }
+            },
+            "status": "generated"
+        }
+    ]
+}

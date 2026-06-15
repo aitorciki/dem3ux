@@ -31,14 +31,6 @@
             android:exported="false"
             android:excludeFromRecents="true"
             android:taskAffinity="" />
-        <activity-alias
-            android:name=".presets.DuckStationBridgeActivity"
-            android:targetActivity=".PresetBridgeActivity"
-            android:exported="true" />
-        <activity-alias
-            android:name=".presets.FlycastBridgeActivity"
-            android:targetActivity=".PresetBridgeActivity"
-            android:exported="true" />
     </application>
 
 </manifest>
