@@ -1,5 +1,9 @@
 # dem3ux
 
+<p align="center">
+    <img src="assets/icon.svg">
+</p>
+
 dem3ux is an Android `.m3u` demuxer and emulator launch bridge.
 
 Its goal is to bridge launchers/frontends that launch `.m3u` playlists with emulators that do not directly support `.m3u` files and instead expect a concrete game image path.
@@ -47,6 +51,12 @@ When launched as a regular Android app, dem3ux provides a small management UI:
 - Let the user change the selected/default entry.
 - Persist the selected entry so future bridge launches use it by default.
 - Setup supported frontends to use dem3ux (currently limited to ES-DE).
+
+<p align="center">
+  <img src="assets/screenshots/dem3ux-list.png" width="250">
+  <img src="assets/screenshots/dem3ux-detail.png" width="250">
+  <img src="assets/screenshots/dem3ux-setup.png" width="250">
+</p>
 
 ## Frontend Integration
 
