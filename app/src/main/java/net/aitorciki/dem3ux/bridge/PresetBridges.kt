@@ -4,8 +4,8 @@ import kotlin.String
 import kotlin.collections.List
 import kotlin.collections.listOf
 
-public object PresetBridges {
-    public val aethersx2: PresetBridge =
+internal object PresetBridges {
+    internal val aethersx2: PresetBridge =
         PresetBridge(
             id = "aethersx2",
             displayName = "Aethersx2",
@@ -18,7 +18,7 @@ public object PresetBridges {
             esDeEmulatorName = "AETHERSX2",
         )
 
-    public val armsx2: PresetBridge =
+    internal val armsx2: PresetBridge =
         PresetBridge(
             id = "armsx2",
             displayName = "Armsx2",
@@ -31,7 +31,7 @@ public object PresetBridges {
             esDeEmulatorName = "ARMSX2",
         )
 
-    public val c64Emu: PresetBridge =
+    internal val c64Emu: PresetBridge =
         PresetBridge(
             id = "c64-emu",
             displayName = "C64 Emu",
@@ -43,7 +43,7 @@ public object PresetBridges {
             esDeEmulatorName = "C64-EMU",
         )
 
-    public val colem: PresetBridge =
+    internal val colem: PresetBridge =
         PresetBridge(
             id = "colem",
             displayName = "Colem",
@@ -56,7 +56,7 @@ public object PresetBridges {
             esDeEmulatorName = "COLEM",
         )
 
-    public val dolphin: PresetBridge =
+    internal val dolphin: PresetBridge =
         PresetBridge(
             id = "dolphin",
             displayName = "Dolphin",
@@ -69,7 +69,7 @@ public object PresetBridges {
             esDeEmulatorName = "DOLPHIN",
         )
 
-    public val dolphinMmjr: PresetBridge =
+    internal val dolphinMmjr: PresetBridge =
         PresetBridge(
             id = "dolphin-mmjr",
             displayName = "Dolphin Mmjr",
@@ -82,7 +82,7 @@ public object PresetBridges {
             esDeEmulatorName = "DOLPHIN-MMJR",
         )
 
-    public val dolphinMmjr2: PresetBridge =
+    internal val dolphinMmjr2: PresetBridge =
         PresetBridge(
             id = "dolphin-mmjr2",
             displayName = "Dolphin Mmjr2",
@@ -95,7 +95,7 @@ public object PresetBridges {
             esDeEmulatorName = "DOLPHIN-MMJR2",
         )
 
-    public val duckStation: PresetBridge =
+    internal val duckStation: PresetBridge =
         PresetBridge(
             id = "duckstation",
             displayName = "DuckStation",
@@ -108,7 +108,7 @@ public object PresetBridges {
             esDeEmulatorName = "DUCKSTATION",
         )
 
-    public val emucorex: PresetBridge =
+    internal val emucorex: PresetBridge =
         PresetBridge(
             id = "emucorex",
             displayName = "Emucorex",
@@ -120,7 +120,7 @@ public object PresetBridges {
             esDeEmulatorName = "EMUCOREX",
         )
 
-    public val epsxe: PresetBridge =
+    internal val epsxe: PresetBridge =
         PresetBridge(
             id = "epsxe",
             displayName = "Epsxe",
@@ -133,7 +133,7 @@ public object PresetBridges {
             esDeEmulatorName = "EPSXE",
         )
 
-    public val flycast: PresetBridge =
+    internal val flycast: PresetBridge =
         PresetBridge(
             id = "flycast",
             displayName = "Flycast",
@@ -146,7 +146,7 @@ public object PresetBridges {
             esDeEmulatorName = "FLYCAST",
         )
 
-    public val fmsx: PresetBridge =
+    internal val fmsx: PresetBridge =
         PresetBridge(
             id = "fmsx",
             displayName = "Fmsx",
@@ -159,7 +159,7 @@ public object PresetBridges {
             esDeEmulatorName = "FMSX",
         )
 
-    public val fpse: PresetBridge =
+    internal val fpse: PresetBridge =
         PresetBridge(
             id = "fpse",
             displayName = "Fpse",
@@ -171,7 +171,7 @@ public object PresetBridges {
             esDeEmulatorName = "FPSE",
         )
 
-    public val fpseNg: PresetBridge =
+    internal val fpseNg: PresetBridge =
         PresetBridge(
             id = "fpse-ng",
             displayName = "Fpse Ng",
@@ -183,7 +183,7 @@ public object PresetBridges {
             esDeEmulatorName = "FPSE-NG",
         )
 
-    public val mastergear: PresetBridge =
+    internal val mastergear: PresetBridge =
         PresetBridge(
             id = "mastergear",
             displayName = "Mastergear",
@@ -195,7 +195,7 @@ public object PresetBridges {
             esDeEmulatorName = "MASTERGEAR",
         )
 
-    public val mdEmu: PresetBridge =
+    internal val mdEmu: PresetBridge =
         PresetBridge(
             id = "md-emu",
             displayName = "Md Emu",
@@ -207,7 +207,7 @@ public object PresetBridges {
             esDeEmulatorName = "MD-EMU",
         )
 
-    public val msxEmu: PresetBridge =
+    internal val msxEmu: PresetBridge =
         PresetBridge(
             id = "msx-emu",
             displayName = "Msx Emu",
@@ -219,7 +219,7 @@ public object PresetBridges {
             esDeEmulatorName = "MSX-EMU",
         )
 
-    public val pceEmu: PresetBridge =
+    internal val pceEmu: PresetBridge =
         PresetBridge(
             id = "pce-emu",
             displayName = "Pce Emu",
@@ -231,7 +231,7 @@ public object PresetBridges {
             esDeEmulatorName = "PCE-EMU",
         )
 
-    public val pizzaBoySc: PresetBridge =
+    internal val pizzaBoySc: PresetBridge =
         PresetBridge(
             id = "pizza-boy-sc",
             displayName = "Pizza Boy Sc",
@@ -245,7 +245,7 @@ public object PresetBridges {
             esDeEmulatorName = "PIZZA-BOY-SC",
         )
 
-    public val play: PresetBridge =
+    internal val play: PresetBridge =
         PresetBridge(
             id = "play",
             displayName = "Play",
@@ -257,7 +257,7 @@ public object PresetBridges {
             esDeEmulatorName = "PLAY!",
         )
 
-    public val redream: PresetBridge =
+    internal val redream: PresetBridge =
         PresetBridge(
             id = "redream",
             displayName = "Redream",
@@ -269,7 +269,7 @@ public object PresetBridges {
             esDeEmulatorName = "REDREAM",
         )
 
-    public val saturnEmu: PresetBridge =
+    internal val saturnEmu: PresetBridge =
         PresetBridge(
             id = "saturn-emu",
             displayName = "Saturn Emu",
@@ -281,7 +281,7 @@ public object PresetBridges {
             esDeEmulatorName = "SATURN-EMU",
         )
 
-    public val yabasanshiro2: PresetBridge =
+    internal val yabasanshiro2: PresetBridge =
         PresetBridge(
             id = "yabasanshiro-2",
             displayName = "Yabasanshiro 2",
@@ -295,7 +295,7 @@ public object PresetBridges {
             esDeEmulatorName = "YABASANSHIRO-2",
         )
 
-    public val all: List<PresetBridge> =
+    internal val all: List<PresetBridge> =
         listOf(
             aethersx2,
             armsx2,
@@ -322,7 +322,7 @@ public object PresetBridges {
             yabasanshiro2,
         )
 
-    public fun fromAliasClassName(className: String): PresetBridge? =
+    internal fun fromAliasClassName(className: String): PresetBridge? =
         when (className) {
             "net.aitorciki.dem3ux.presets.Aethersx2BridgeActivity" -> aethersx2
             "net.aitorciki.dem3ux.presets.Armsx2BridgeActivity" -> armsx2
