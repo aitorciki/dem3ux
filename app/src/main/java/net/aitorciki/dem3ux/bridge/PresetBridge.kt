@@ -11,22 +11,6 @@ data class PresetBridge(
     val inputExtraKey: String? = null,
     val esDeEmulatorName: String? = null,
 ) {
-    constructor(
-        id: String,
-        displayName: String,
-        aliasClassName: String,
-        targetActivity: String,
-        inputExtraKey: String? = null,
-        esDeEmulatorName: String? = null,
-    ) : this(
-        id = id,
-        displayName = displayName,
-        aliasClassName = aliasClassName,
-        targetActivities = listOf(targetActivity),
-        inputExtraKey = inputExtraKey,
-        esDeEmulatorName = esDeEmulatorName,
-    )
-
     val targetComponents: List<ComponentName> = targetActivities.mapNotNull(ComponentName::unflattenFromString)
     val targetComponent: ComponentName? = targetComponents.firstOrNull()
     val esDeAliasEntry: String = "net.aitorciki.dem3ux/${aliasClassName.removePrefix("net.aitorciki.dem3ux")}"

@@ -72,7 +72,6 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
@@ -168,17 +167,14 @@ private fun Dem3uxApp(
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val useTwoPane = maxWidth >= 840.dp && maxHeight >= 600.dp
             val selectedPlaylist = uiState.selectedPlaylist
-            val openDrawer = {
+            val openDrawer: () -> Unit = {
                 coroutineScope.launch { drawerState.open() }
-                Unit
             }
-            val openSetupGuide = {
+            val openSetupGuide: () -> Unit = {
                 uriHandler.openUri(SETUP_GUIDE_URL)
-                Unit
             }
-            val openSetup = {
+            val openSetup: () -> Unit = {
                 destination = MainDestination.Setup
-                Unit
             }
 
             BackHandler(enabled = destination == MainDestination.Help || destination == MainDestination.Setup) {
