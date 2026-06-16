@@ -1,5 +1,6 @@
 package net.aitorciki.dem3ux
 
+import android.content.Intent
 import android.content.res.Configuration
 import android.net.Uri
 import android.os.Bundle
@@ -8,6 +9,7 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -22,11 +24,14 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -55,14 +60,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -71,6 +83,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import net.aitorciki.dem3ux.ui.Dem3uxUiState
 import net.aitorciki.dem3ux.ui.Dem3uxViewModel
+import net.aitorciki.dem3ux.ui.EsDeSetupPresetUi
+import net.aitorciki.dem3ux.ui.EsDeSetupUiState
 import net.aitorciki.dem3ux.ui.PlaylistDetailUi
 import net.aitorciki.dem3ux.ui.PlaylistEntryUi
 import net.aitorciki.dem3ux.ui.PlaylistSummaryUi
@@ -79,6 +93,7 @@ private const val SETUP_GUIDE_URL = "https://github.com/aitorciki/dem3ux#fronten
 
 private enum class MainDestination {
     Playlists,
+    Setup,
     Help,
 }
 
@@ -104,6 +119,9 @@ fun Dem3uxApp() {
         onBackClick = viewModel::clearSelectedPlaylist,
         onEntryClick = viewModel::selectEntry,
         onOpenPlaylistClick = viewModel::importPlaylist,
+        onEsDeFolderSelected = viewModel::selectEsDeCustomSystemsFolder,
+        onEsDePresetSelectedChange = viewModel::setEsDePresetSelected,
+        onSaveEsDeSetupClick = viewModel::saveEsDeSetup,
         onImportMessageShown = viewModel::clearImportMessage,
     )
 }
@@ -116,6 +134,9 @@ private fun Dem3uxApp(
     onBackClick: () -> Unit,
     onEntryClick: (Long, Int) -> Unit,
     onOpenPlaylistClick: (Uri) -> Unit,
+    onEsDeFolderSelected: (Uri, Int) -> Unit,
+    onEsDePresetSelectedChange: (String, Boolean) -> Unit,
+    onSaveEsDeSetupClick: () -> Unit,
     onImportMessageShown: () -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -127,6 +148,13 @@ private fun Dem3uxApp(
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) {
                 onOpenPlaylistClick(uri)
+            }
+        }
+    val openEsDeFolderLauncher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val uri = result.data?.data
+            if (uri != null) {
+                onEsDeFolderSelected(uri, result.data?.flags ?: 0)
             }
         }
 
@@ -148,8 +176,12 @@ private fun Dem3uxApp(
                 uriHandler.openUri(SETUP_GUIDE_URL)
                 Unit
             }
+            val openSetup = {
+                destination = MainDestination.Setup
+                Unit
+            }
 
-            BackHandler(enabled = destination == MainDestination.Help) {
+            BackHandler(enabled = destination == MainDestination.Help || destination == MainDestination.Setup) {
                 destination = MainDestination.Playlists
             }
             BackHandler(enabled = destination == MainDestination.Playlists && !useTwoPane && selectedPlaylist != null) {
@@ -175,9 +207,9 @@ private fun Dem3uxApp(
                 Scaffold(
                     topBar = {
                         when {
-                            destination == MainDestination.Help -> {
+                            destination == MainDestination.Help || destination == MainDestination.Setup -> {
                                 AppTopBar(
-                                    title = "Help",
+                                    title = if (destination == MainDestination.Help) "Help" else "Setup",
                                     onMenuClick = openDrawer,
                                 )
                             }
@@ -222,6 +254,15 @@ private fun Dem3uxApp(
                             if (destination == MainDestination.Help) {
                                 HelpContent(
                                     onOpenSetupGuideClick = openSetupGuide,
+                                    onOpenSetupClick = openSetup,
+                                    modifier = Modifier.weight(1f),
+                                )
+                            } else if (destination == MainDestination.Setup) {
+                                SetupContent(
+                                    setupState = uiState.esDeSetup,
+                                    onChooseEsDeFolderClick = { openEsDeFolderLauncher.launch(openDocumentTreeIntent()) },
+                                    onPresetSelectedChange = onEsDePresetSelectedChange,
+                                    onSaveClick = onSaveEsDeSetupClick,
                                     modifier = Modifier.weight(1f),
                                 )
                             } else if (useTwoPane) {
@@ -230,6 +271,7 @@ private fun Dem3uxApp(
                                     onPlaylistClick = onPlaylistClick,
                                     onEntryClick = onEntryClick,
                                     onOpenSetupGuideClick = openSetupGuide,
+                                    onOpenSetupClick = openSetup,
                                     modifier = Modifier.weight(1f),
                                 )
                             } else if (uiState.selectedPlaylist == null) {
@@ -237,6 +279,7 @@ private fun Dem3uxApp(
                                     playlists = uiState.playlists,
                                     onPlaylistClick = onPlaylistClick,
                                     onOpenSetupGuideClick = openSetupGuide,
+                                    onOpenSetupClick = openSetup,
                                     modifier = Modifier.weight(1f),
                                 )
                             } else {
@@ -253,6 +296,16 @@ private fun Dem3uxApp(
         }
     }
 }
+
+private fun openDocumentTreeIntent(): Intent =
+    Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+        addFlags(
+            Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                Intent.FLAG_GRANT_WRITE_URI_PERMISSION or
+                Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION or
+                Intent.FLAG_GRANT_PREFIX_URI_PERMISSION,
+        )
+    }
 
 @Composable
 private fun Dem3uxTheme(content: @Composable () -> Unit) {
@@ -275,6 +328,7 @@ private fun TwoPaneContent(
     onPlaylistClick: (Long) -> Unit,
     onEntryClick: (Long, Int) -> Unit,
     onOpenSetupGuideClick: () -> Unit,
+    onOpenSetupClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(modifier = modifier.fillMaxSize()) {
@@ -282,6 +336,7 @@ private fun TwoPaneContent(
             playlists = uiState.playlists,
             onPlaylistClick = onPlaylistClick,
             onOpenSetupGuideClick = onOpenSetupGuideClick,
+            onOpenSetupClick = onOpenSetupClick,
             modifier = Modifier.weight(0.42f),
         )
         Spacer(modifier = Modifier.width(16.dp))
@@ -390,6 +445,12 @@ private fun Dem3uxDrawer(
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
             NavigationDrawerItem(
+                label = { Text("Setup") },
+                selected = destination == MainDestination.Setup,
+                onClick = { onDestinationClick(MainDestination.Setup) },
+                modifier = Modifier.padding(horizontal = 12.dp),
+            )
+            NavigationDrawerItem(
                 label = { Text("Help") },
                 selected = destination == MainDestination.Help,
                 onClick = { onDestinationClick(MainDestination.Help) },
@@ -407,15 +468,170 @@ private fun Dem3uxDrawer(
 }
 
 @Composable
+private fun SetupContent(
+    setupState: EsDeSetupUiState,
+    onChooseEsDeFolderClick: () -> Unit,
+    onPresetSelectedChange: (String, Boolean) -> Unit,
+    onSaveClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var setupCardExpanded by remember { mutableStateOf(!setupState.hasFolderAccess) }
+
+    LaunchedEffect(setupState.hasFolderAccess) {
+        setupCardExpanded = !setupState.hasFolderAccess
+    }
+
+    Column(modifier = modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "ES-DE preset setup",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.SemiBold,
+                                )
+                                if (!setupCardExpanded && setupState.customSystemsUri != null) {
+                                    Text(
+                                        text = setupState.customSystemsUri,
+                                        modifier = Modifier.basicMarquee(),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                            if (setupState.hasFolderAccess) {
+                                TextButton(onClick = { setupCardExpanded = !setupCardExpanded }) {
+                                    Text(if (setupCardExpanded) "Hide" else "Show")
+                                }
+                            }
+                        }
+                        if (setupCardExpanded) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Select ES-DE's custom_systems folder, then choose which installed emulators dem3ux should wrap.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Button(onClick = onChooseEsDeFolderClick) {
+                                Text("Select custom_systems folder")
+                            }
+                        }
+                        if (setupCardExpanded && setupState.customSystemsUri != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = setupState.customSystemsUri,
+                                modifier = Modifier.basicMarquee(),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                }
+            }
+
+            val installedPresets = setupState.presets.filter { preset -> preset.installed }
+            if (installedPresets.isEmpty()) {
+                item {
+                    Text(
+                        text = "No supported emulator targets were detected. Install a supported emulator, then reopen this screen.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                items(installedPresets, key = { preset -> preset.id }) { preset ->
+                    EsDePresetRow(
+                        preset = preset,
+                        enabled = setupState.hasFolderAccess,
+                        onSelectedChange = { selected -> onPresetSelectedChange(preset.id, selected) },
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        Button(
+            onClick = onSaveClick,
+            enabled = setupState.hasFolderAccess,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text("Save ES-DE setup")
+        }
+    }
+}
+
+@Composable
+private fun EsDePresetRow(
+    preset: EsDeSetupPresetUi,
+    enabled: Boolean,
+    onSelectedChange: (Boolean) -> Unit,
+) {
+    Card(
+        modifier = Modifier.alpha(if (enabled) 1f else 0.56f),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = enabled) { onSelectedChange(!preset.selected) }
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (preset.installedTargetIcon != null) {
+                Image(
+                    bitmap = preset.installedTargetIcon.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = preset.displayName,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
+            Checkbox(
+                checked = preset.selected,
+                onCheckedChange = onSelectedChange,
+                enabled = enabled,
+            )
+        }
+    }
+}
+
+@Composable
 private fun PlaylistList(
     playlists: List<PlaylistSummaryUi>,
     onPlaylistClick: (Long) -> Unit,
     onOpenSetupGuideClick: () -> Unit,
+    onOpenSetupClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         if (playlists.isEmpty()) {
-            EmptyPlaylistList(onOpenSetupGuideClick = onOpenSetupGuideClick)
+            EmptyPlaylistList(
+                onOpenSetupGuideClick = onOpenSetupGuideClick,
+                onOpenSetupClick = onOpenSetupClick,
+            )
         } else {
             LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(playlists, key = { playlist -> playlist.id }) { playlist ->
@@ -561,7 +777,10 @@ private fun PlaylistEntryRow(
 }
 
 @Composable
-private fun EmptyPlaylistList(onOpenSetupGuideClick: () -> Unit) {
+private fun EmptyPlaylistList(
+    onOpenSetupGuideClick: () -> Unit,
+    onOpenSetupClick: () -> Unit,
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -573,7 +792,10 @@ private fun EmptyPlaylistList(onOpenSetupGuideClick: () -> Unit) {
                 fontWeight = FontWeight.SemiBold,
             )
             Spacer(modifier = Modifier.height(8.dp))
-            SetupGuideText(onOpenSetupGuideClick = onOpenSetupGuideClick)
+            SetupGuideText(
+                onOpenSetupGuideClick = onOpenSetupGuideClick,
+                onOpenSetupClick = onOpenSetupClick,
+            )
         }
     }
 }
@@ -581,6 +803,7 @@ private fun EmptyPlaylistList(onOpenSetupGuideClick: () -> Unit) {
 @Composable
 private fun HelpContent(
     onOpenSetupGuideClick: () -> Unit,
+    onOpenSetupClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -595,16 +818,22 @@ private fun HelpContent(
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
-                SetupGuideText(onOpenSetupGuideClick = onOpenSetupGuideClick)
+                SetupGuideText(
+                    onOpenSetupGuideClick = onOpenSetupGuideClick,
+                    onOpenSetupClick = onOpenSetupClick,
+                )
             }
         }
     }
 }
 
 @Composable
-private fun SetupGuideText(onOpenSetupGuideClick: () -> Unit) {
+private fun SetupGuideText(
+    onOpenSetupGuideClick: () -> Unit,
+    onOpenSetupClick: () -> Unit,
+) {
     Text(
-        text = "dem3ux is a bridge, so it must be configured manually in your emulator frontend.",
+        text = "dem3ux is a bridge and must be configured in your emulator frontend.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -612,7 +841,33 @@ private fun SetupGuideText(onOpenSetupGuideClick: () -> Unit) {
     Text(
         text =
             buildAnnotatedString {
-                append("Configure the frontend to launch ")
+                append("If your frontend is supported, you can configure it directly from the ")
+                withLink(
+                    LinkAnnotation.Clickable(
+                        tag = "setup",
+                        styles =
+                            TextLinkStyles(
+                                style =
+                                    SpanStyle(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.SemiBold,
+                                    ),
+                            ),
+                        linkInteractionListener = { onOpenSetupClick() },
+                    ),
+                ) {
+                    append("Setup")
+                }
+                append(" section.")
+            },
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+    )
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        text =
+            buildAnnotatedString {
+                append("Otherwise, configure the frontend manually to launch ")
                 withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) {
                     append("net.aitorciki.dem3ux/.BridgeActivity")
                 }
@@ -700,6 +955,9 @@ private fun Dem3uxAppInteractivePreview() {
                 )
         },
         onOpenPlaylistClick = {},
+        onEsDeFolderSelected = { _, _ -> },
+        onEsDePresetSelectedChange = { _, _ -> },
+        onSaveEsDeSetupClick = {},
         onImportMessageShown = {},
     )
 }
@@ -714,6 +972,9 @@ private fun Dem3uxAppListPreview() {
         onBackClick = {},
         onEntryClick = { _, _ -> },
         onOpenPlaylistClick = {},
+        onEsDeFolderSelected = { _, _ -> },
+        onEsDePresetSelectedChange = { _, _ -> },
+        onSaveEsDeSetupClick = {},
         onImportMessageShown = {},
     )
 }
@@ -728,6 +989,9 @@ private fun Dem3uxAppDetailPreview() {
         onBackClick = {},
         onEntryClick = { _, _ -> },
         onOpenPlaylistClick = {},
+        onEsDeFolderSelected = { _, _ -> },
+        onEsDePresetSelectedChange = { _, _ -> },
+        onSaveEsDeSetupClick = {},
         onImportMessageShown = {},
     )
 }
@@ -736,7 +1000,36 @@ private fun Dem3uxAppDetailPreview() {
 @Composable
 private fun HelpContentPreview() {
     Dem3uxTheme {
-        HelpContent(onOpenSetupGuideClick = {})
+        PreviewScreenFrame {
+            HelpContent(
+                onOpenSetupGuideClick = {},
+                onOpenSetupClick = {},
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Setup")
+@Composable
+private fun SetupContentPreview() {
+    Dem3uxTheme {
+        PreviewScreenFrame {
+            SetupContent(
+                setupState = previewSetupState,
+                onChooseEsDeFolderClick = {},
+                onPresetSelectedChange = { _, _ -> },
+                onSaveClick = {},
+            )
+        }
+    }
+}
+
+@Composable
+private fun PreviewScreenFrame(content: @Composable () -> Unit) {
+    Surface(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            content()
+        }
     }
 }
 
@@ -825,6 +1118,42 @@ private val previewDetailState =
     Dem3uxUiState(
         playlists = previewPlaylists,
         selectedPlaylist = previewNebulaDriftDetail,
+    )
+
+private val previewSetupState =
+    EsDeSetupUiState(
+        customSystemsUri =
+            "content://com.android.externalstorage.documents/tree/primary%3AES-DE%2Fcustom_systems",
+        presets =
+            listOf(
+                EsDeSetupPresetUi(
+                    id = "duckstation",
+                    displayName = "DuckStation",
+                    esDeEmulatorName = "DUCKSTATION",
+                    aliasEntry = "net.aitorciki.dem3ux/.presets.DuckStationBridgeActivity",
+                    installed = true,
+                    installedTargetIcon = null,
+                    selected = true,
+                ),
+                EsDeSetupPresetUi(
+                    id = "flycast",
+                    displayName = "Flycast",
+                    esDeEmulatorName = "FLYCAST",
+                    aliasEntry = "net.aitorciki.dem3ux/.presets.FlycastBridgeActivity",
+                    installed = true,
+                    installedTargetIcon = null,
+                    selected = false,
+                ),
+                EsDeSetupPresetUi(
+                    id = "redream",
+                    displayName = "Redream",
+                    esDeEmulatorName = "REDREAM",
+                    aliasEntry = "net.aitorciki.dem3ux/.presets.RedreamBridgeActivity",
+                    installed = false,
+                    installedTargetIcon = null,
+                    selected = false,
+                ),
+            ),
     )
 
 private const val PREVIEW_VERSION_LABEL = "Version 1.0.0 (1)"

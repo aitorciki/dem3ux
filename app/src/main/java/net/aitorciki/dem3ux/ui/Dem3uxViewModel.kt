@@ -3,6 +3,7 @@ package net.aitorciki.dem3ux.ui
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
@@ -12,25 +13,44 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import net.aitorciki.dem3ux.bridge.PresetBridge
+import net.aitorciki.dem3ux.bridge.PresetBridges
 import net.aitorciki.dem3ux.data.Dem3uxDatabaseProvider
 import net.aitorciki.dem3ux.data.PlaylistRepository
 import net.aitorciki.dem3ux.data.PlaylistWithEntries
+import net.aitorciki.dem3ux.setup.EsDeFindRuleSelection
+import net.aitorciki.dem3ux.setup.EsDeFindRulesEditor
+import net.aitorciki.dem3ux.setup.EsDeSetupRepository
 
 class Dem3uxViewModel(
     application: Application,
 ) : AndroidViewModel(application) {
     private val repository = PlaylistRepository(Dem3uxDatabaseProvider.get(application))
+    private val esDeSetupRepository = EsDeSetupRepository(application)
     private val selectedPlaylistId = MutableStateFlow<Long?>(null)
     private val importMessage = MutableStateFlow<String?>(null)
+    private val esDeCustomSystemsUri = MutableStateFlow<Uri?>(null)
+    private val selectedEsDePresetIds = MutableStateFlow<Set<String>>(emptySet())
+
+    private val esDeSetupState =
+        combine(esDeCustomSystemsUri, selectedEsDePresetIds) { uri, selectedPresetIds ->
+            buildEsDeSetupUiState(uri = uri, selectedPresetIds = selectedPresetIds)
+        }
 
     val uiState =
-        combine(repository.observePlaylistsWithEntries(), selectedPlaylistId, importMessage) { playlists, selectedId, message ->
+        combine(
+            repository.observePlaylistsWithEntries(),
+            selectedPlaylistId,
+            importMessage,
+            esDeSetupState,
+        ) { playlists, selectedId, message, setupState ->
             val sortedPlaylists = playlists.map { playlist -> playlist.withSortedEntries() }
             val selectedPlaylist = sortedPlaylists.firstOrNull { playlist -> playlist.playlist.id == selectedId }
 
             Dem3uxUiState(
                 playlists = sortedPlaylists.map { playlist -> playlist.toSummaryUi() },
                 selectedPlaylist = selectedPlaylist?.toDetailUi(),
+                esDeSetup = setupState,
                 importMessage = message,
             )
         }.stateIn(
@@ -38,6 +58,10 @@ class Dem3uxViewModel(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = Dem3uxUiState(),
         )
+
+    init {
+        restoreEsDeSetupFolder()
+    }
 
     fun selectPlaylist(playlistId: Long) {
         selectedPlaylistId.value = playlistId
@@ -86,6 +110,110 @@ class Dem3uxViewModel(
         importMessage.value = null
     }
 
+    fun selectEsDeCustomSystemsFolder(
+        uri: Uri,
+        grantFlags: Int,
+    ) {
+        viewModelScope.launch {
+            val result =
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        esDeSetupRepository.persistCustomSystemsFolder(uri = uri, grantFlags = grantFlags)
+                        val currentRules = esDeSetupRepository.readFindRules(uri)
+                        val selectedEmulatorNames =
+                            EsDeFindRulesEditor.selectedEmulatorNames(
+                                currentRules,
+                                esDeRuleSelections(selected = true),
+                            )
+
+                        uri to selectedEmulatorNames.toPresetIds()
+                    }
+                }
+
+            result
+                .onSuccess { (folderUri, selectedPresetIds) ->
+                    esDeCustomSystemsUri.value = folderUri
+                    selectedEsDePresetIds.value = selectedPresetIds
+                    importMessage.value = "ES-DE folder selected."
+                }.onFailure { error ->
+                    Log.w(TAG, "Could not open ES-DE custom_systems folder.", error)
+                    importMessage.value = "Could not open ES-DE custom_systems folder."
+                }
+        }
+    }
+
+    private fun restoreEsDeSetupFolder() {
+        viewModelScope.launch {
+            val result =
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        val uri = esDeSetupRepository.persistedCustomSystemsFolder() ?: return@runCatching null
+                        val currentRules = esDeSetupRepository.readFindRules(uri)
+                        val selectedEmulatorNames =
+                            EsDeFindRulesEditor.selectedEmulatorNames(
+                                currentRules,
+                                esDeRuleSelections(selected = true),
+                            )
+
+                        uri to selectedEmulatorNames.toPresetIds()
+                    }
+                }
+
+            result
+                .onSuccess { restoredSetup ->
+                    if (restoredSetup != null) {
+                        val (folderUri, selectedPresetIds) = restoredSetup
+                        esDeCustomSystemsUri.value = folderUri
+                        selectedEsDePresetIds.value = selectedPresetIds
+                    }
+                }.onFailure { error ->
+                    Log.w(TAG, "Could not restore ES-DE custom_systems folder.", error)
+                }
+        }
+    }
+
+    fun setEsDePresetSelected(
+        presetId: String,
+        selected: Boolean,
+    ) {
+        selectedEsDePresetIds.value =
+            if (selected) {
+                selectedEsDePresetIds.value + presetId
+            } else {
+                selectedEsDePresetIds.value - presetId
+            }
+    }
+
+    fun saveEsDeSetup() {
+        val folderUri = esDeCustomSystemsUri.value
+        if (folderUri == null) {
+            importMessage.value = "Select the ES-DE custom_systems folder first."
+            return
+        }
+
+        viewModelScope.launch {
+            val result =
+                withContext(Dispatchers.IO) {
+                    runCatching {
+                        val currentRules = esDeSetupRepository.readFindRules(folderUri)
+                        val updatedRules =
+                            EsDeFindRulesEditor.applySelections(
+                                inputXml = currentRules,
+                                selections = esDeRuleSelections(selectedPresetIds = selectedEsDePresetIds.value),
+                            )
+                        esDeSetupRepository.saveFindRules(treeUri = folderUri, content = updatedRules)
+                    }
+                }
+
+            importMessage.value =
+                if (result.isSuccess) {
+                    "ES-DE setup saved."
+                } else {
+                    "Could not save ES-DE setup."
+                }
+        }
+    }
+
     private fun PlaylistWithEntries.withSortedEntries(): PlaylistWithEntries =
         copy(entries = entries.sortedBy { entry -> entry.entryIndex })
 
@@ -121,6 +249,52 @@ class Dem3uxViewModel(
                 },
         )
     }
+
+    private fun buildEsDeSetupUiState(
+        uri: Uri?,
+        selectedPresetIds: Set<String>,
+    ): EsDeSetupUiState =
+        EsDeSetupUiState(
+            customSystemsUri = uri?.toString(),
+            presets =
+                PresetBridges.all
+                    .filter { preset -> preset.esDeEmulatorName != null }
+                    .map { preset -> preset.toSetupPresetUi(selected = preset.id in selectedPresetIds) },
+        )
+
+    private fun PresetBridge.toSetupPresetUi(selected: Boolean): EsDeSetupPresetUi {
+        val installedTarget = esDeSetupRepository.installedPresetTarget(this)
+
+        return EsDeSetupPresetUi(
+            id = id,
+            displayName = displayName,
+            esDeEmulatorName = requireNotNull(esDeEmulatorName),
+            aliasEntry = esDeAliasEntry,
+            installed = installedTarget != null,
+            installedTargetIcon = installedTarget?.icon,
+            selected = selected,
+        )
+    }
+
+    private fun esDeRuleSelections(selected: Boolean): List<EsDeFindRuleSelection> =
+        esDePresets().map { preset -> preset.toFindRuleSelection(selected = selected) }
+
+    private fun esDeRuleSelections(selectedPresetIds: Set<String>): List<EsDeFindRuleSelection> =
+        esDePresets().map { preset -> preset.toFindRuleSelection(selected = preset.id in selectedPresetIds) }
+
+    private fun PresetBridge.toFindRuleSelection(selected: Boolean): EsDeFindRuleSelection =
+        EsDeFindRuleSelection(
+            emulatorName = requireNotNull(esDeEmulatorName),
+            aliasEntry = esDeAliasEntry,
+            selected = selected,
+        )
+
+    private fun Set<String>.toPresetIds(): Set<String> {
+        val emulatorNameToPresetId = esDePresets().associate { preset -> requireNotNull(preset.esDeEmulatorName) to preset.id }
+        return mapNotNull(emulatorNameToPresetId::get).toSet()
+    }
+
+    private fun esDePresets(): List<PresetBridge> = PresetBridges.all.filter { preset -> preset.esDeEmulatorName != null }
 }
 
 private fun Long.toRelativeLabel(): String {
@@ -139,3 +313,5 @@ private fun Long.toRelativeLabel(): String {
         else -> "$elapsedDays days ago"
     }
 }
+
+private const val TAG = "dem3ux"
