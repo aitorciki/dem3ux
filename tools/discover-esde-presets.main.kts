@@ -10,6 +10,7 @@ private val esSystemsUrl =
 private val esFindRulesUrl =
     "https://gitlab.com/es-de/emulationstation-de/-/raw/master/resources/systems/android/es_find_rules.xml"
 private val bridgePresetCatalogFile = File("presets/bridge-presets.json")
+private val actionableOnly = "--actionable" in args || "--only-actionable" in args
 
 private val emulatorRegex = Regex("%EMULATOR_([^%]+)%")
 private val dataRegex = Regex("%DATA%=(\"[^\"]*\"|[^\\s]+)")
@@ -367,6 +368,21 @@ private fun printReport(analyses: List<CommandAnalysis>) {
     }
 }
 
+private fun printActionableReport(analyses: List<CommandAnalysis>) {
+    val actionableStatuses = listOf(Status.Review, Status.Unsupported)
+    val actionableAnalyses = analyses.filter { analysis -> analysis.status in actionableStatuses }
+    if (actionableAnalyses.isEmpty()) return
+
+    actionableStatuses.forEach { status ->
+        val sectionAnalyses = actionableAnalyses.filter { analysis -> analysis.status == status }
+        if (sectionAnalyses.isNotEmpty()) {
+            println("## ${status.title}")
+            println()
+            sectionAnalyses.forEach(::printAnalysis)
+        }
+    }
+}
+
 private fun printReasonBreakdown(analyses: List<CommandAnalysis>) {
     println("## Reason Breakdown")
     println()
@@ -436,5 +452,9 @@ run {
                 }
             }
 
-    printReport(analyses)
+    if (actionableOnly) {
+        printActionableReport(analyses)
+    } else {
+        printReport(analyses)
+    }
 }
