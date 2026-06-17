@@ -16,24 +16,24 @@ object BridgeTargetIntentFactory {
         val targetIntent =
             Intent(targetAction).apply {
                 component = targetComponent
+                data =
+                    sourceIntent.data?.let { data ->
+                        if (data.toString() == inputPath) {
+                            selectedEntry.toUri()
+                        } else {
+                            data
+                        }
+                    }
                 addFlags(sourceIntent.flags and PROXIED_ACTIVITY_FLAGS)
                 sourceIntent.categories.orEmpty().forEach(::addCategory)
             }
 
-        var replacedInputPath = false
         sourceIntent.extras?.keySet().orEmpty().forEach { key ->
             if (!key.startsWith(DEM3UX_EXTRA_PREFIX)) {
                 val value = sourceIntent.getExtraValue(key)
                 val replacement = value.replaceInputPath(inputPath = inputPath, selectedEntry = selectedEntry)
-                if (replacement.replacedInputPath) {
-                    replacedInputPath = true
-                }
-                putExtra(targetIntent, key, replacement.value)
+                putExtra(targetIntent, key, replacement)
             }
-        }
-
-        if (!replacedInputPath) {
-            targetIntent.data = selectedEntry.toUri()
         }
 
         if (selectedEntry.startsWith("content://")) {
@@ -77,29 +77,24 @@ object BridgeTargetIntentFactory {
     private fun Any?.replaceInputPath(
         inputPath: String,
         selectedEntry: String,
-    ): ExtraReplacement =
+    ): Any? =
         when (this) {
             inputPath -> {
-                ExtraReplacement(value = selectedEntry, replacedInputPath = true)
+                selectedEntry
             }
 
             is Array<*> if all { it is String } -> {
-                var replacedInputPath = false
-                val values =
-                    map { value ->
-                        if (value == inputPath) {
-                            replacedInputPath = true
-                            selectedEntry
-                        } else {
-                            value as String
-                        }
-                    }.toTypedArray()
-
-                ExtraReplacement(value = values, replacedInputPath = replacedInputPath)
+                map { value ->
+                    if (value == inputPath) {
+                        selectedEntry
+                    } else {
+                        value as String
+                    }
+                }.toTypedArray()
             }
 
             else -> {
-                ExtraReplacement(value = this, replacedInputPath = false)
+                this
             }
         }
 
@@ -109,9 +104,4 @@ object BridgeTargetIntentFactory {
             Intent.FLAG_ACTIVITY_NO_HISTORY
 
     private const val DEM3UX_EXTRA_PREFIX = "dem3ux."
-
-    private data class ExtraReplacement(
-        val value: Any?,
-        val replacedInputPath: Boolean,
-    )
 }

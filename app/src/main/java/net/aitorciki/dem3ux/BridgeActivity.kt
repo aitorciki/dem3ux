@@ -7,7 +7,7 @@ import net.aitorciki.dem3ux.bridge.BridgeContract
 class BridgeActivity : BaseBridgeActivity() {
     override fun createBridgeLaunch(sourceIntent: Intent): BridgeLaunch? {
         val targetActivity = sourceIntent.getStringExtra(BridgeContract.EXTRA_TARGET_ACTIVITY)
-        val inputPath = sourceIntent.dataString
+        val inputPath = sourceIntent.getStringExtra(BridgeContract.EXTRA_INPUT_PATH)
         val targetComponent = targetActivity?.let(ComponentName::unflattenFromString)
 
         if (targetComponent == null || inputPath.isNullOrBlank()) {

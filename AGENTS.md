@@ -63,13 +63,12 @@ Current preset direction:
 
 Current contract:
 
-- The bridge input ROM path or URI is `Intent.data`.
-- Do not reintroduce `dem3ux.input.path` unless there is a concrete frontend that cannot provide data.
 - `dem3ux.target.activity` is required and must be a flattened Android component string, such as `com.github.stenzek.duckstation/.EmulationActivity`.
+- `dem3ux.input.path` is required and is the input ROM path or URI to demux/proxy.
 - Preserve the frontend-provided `Intent.action` on the target emulator intent.
+- Preserve the frontend-provided `Intent.data` on the target emulator intent unless its string value equals `dem3ux.input.path`; if it matches, replace it with the selected playlist entry.
 - All extras whose keys do not start with `dem3ux.` are target-emulator extras and should be forwarded unchanged by key.
-- If a forwarded string extra or string-array item equals the bridge input, replace it with the selected playlist entry before launching the target.
-- If no forwarded emulator extra consumes the bridge input, set the target intent data to the selected entry.
+- If a forwarded string extra or string-array item equals `dem3ux.input.path`, replace it with the selected playlist entry before launching the target.
 - Forward only the documented activity flags used by frontends so far: clear task, clear top, and no history.
 - For `content://` selected entries, include a read grant and `ClipData` on the target intent.
 

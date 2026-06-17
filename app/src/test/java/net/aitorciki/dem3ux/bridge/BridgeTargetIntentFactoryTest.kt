@@ -24,7 +24,6 @@ class BridgeTargetIntentFactoryTest {
         val selectedEntry = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fpsx%2FDisc%201.chd"
         val sourceIntent =
             Intent(Intent.ACTION_VIEW)
-                .setData(inputPath.toUri())
                 .putExtra("bootPath", inputPath)
                 .putExtra("resumeState", false)
                 .putExtra("slot", 1)
@@ -52,7 +51,7 @@ class BridgeTargetIntentFactoryTest {
     }
 
     @Test
-    fun `uses selected entry as target data when no forwarded extra consumes input path`() {
+    fun `replaces source data when it matches input path`() {
         val inputPath = "/storage/emulated/0/roms/psx/Game.m3u"
         val selectedEntry = "/storage/emulated/0/roms/psx/Disc 1.chd"
         val sourceIntent = Intent().setData(inputPath.toUri())
@@ -69,8 +68,8 @@ class BridgeTargetIntentFactoryTest {
     }
 
     @Test
-    fun `uses selected entry as fallback data when no forwarded extra contains input path`() {
-        val sourceIntent = Intent()
+    fun `preserves source data when it does not match input path`() {
+        val sourceIntent = Intent().setData("cpc6128".toUri())
         val selectedEntry = "/storage/emulated/0/roms/psx/Disc 1.chd"
 
         val targetIntent =
@@ -81,7 +80,22 @@ class BridgeTargetIntentFactoryTest {
                 selectedEntry = selectedEntry,
             )
 
-        assertEquals(selectedEntry, targetIntent.data.toString())
+        assertEquals("cpc6128", targetIntent.data.toString())
+    }
+
+    @Test
+    fun `leaves target data unset when no source data is provided`() {
+        val sourceIntent = Intent()
+
+        val targetIntent =
+            BridgeTargetIntentFactory.build(
+                sourceIntent = sourceIntent,
+                targetComponent = targetComponent,
+                inputPath = "/storage/emulated/0/roms/psx/Game.m3u",
+                selectedEntry = "/storage/emulated/0/roms/psx/Disc 1.chd",
+            )
+
+        assertNull(targetIntent.data)
     }
 
     @Test
@@ -128,6 +142,7 @@ class BridgeTargetIntentFactoryTest {
         val sourceIntent =
             Intent()
                 .putExtra(BridgeContract.EXTRA_TARGET_ACTIVITY, "com.github.stenzek.duckstation/.EmulationActivity")
+                .putExtra(BridgeContract.EXTRA_INPUT_PATH, "/storage/emulated/0/roms/psx/Game.m3u")
                 .putExtra("dem3ux.test", "reserved")
 
         val targetIntent =
@@ -139,6 +154,7 @@ class BridgeTargetIntentFactoryTest {
             )
 
         assertFalse(targetIntent.hasExtra(BridgeContract.EXTRA_TARGET_ACTIVITY))
+        assertFalse(targetIntent.hasExtra(BridgeContract.EXTRA_INPUT_PATH))
         assertFalse(targetIntent.hasExtra("dem3ux.test"))
     }
 
