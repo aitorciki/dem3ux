@@ -16,7 +16,6 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -71,11 +70,9 @@ import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
-import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -830,7 +827,7 @@ private fun SetupGuideText(
     onOpenSetupClick: () -> Unit,
 ) {
     Text(
-        text = "dem3ux is a bridge and must be configured in your emulator frontend.",
+        text = "dem3ux is a bridge and must be configured in your emulator frontend:",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -838,7 +835,7 @@ private fun SetupGuideText(
     Text(
         text =
             buildAnnotatedString {
-                append("If your frontend is supported, you can configure it directly from the ")
+                append("● If your frontend is supported, you can configure it directly from the ")
                 withLink(
                     LinkAnnotation.Clickable(
                         tag = "setup",
@@ -864,13 +861,22 @@ private fun SetupGuideText(
     Text(
         text =
             buildAnnotatedString {
-                append("Otherwise, configure the frontend manually to launch ")
-                withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) {
-                    append("net.aitorciki.dem3ux/.BridgeActivity")
-                }
-                append(" and pass the target emulator with ")
-                withStyle(SpanStyle(fontFamily = FontFamily.Monospace)) {
-                    append("dem3ux.target.activity")
+                append("● Otherwise, configure the frontend manually following the ")
+                withLink(
+                    LinkAnnotation.Clickable(
+                        tag = "guide",
+                        styles =
+                            TextLinkStyles(
+                                style =
+                                    SpanStyle(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        fontWeight = FontWeight.SemiBold,
+                                    ),
+                            ),
+                        linkInteractionListener = { onOpenSetupGuideClick() },
+                    ),
+                ) {
+                    append("Integration Guide")
                 }
                 append(".")
             },
@@ -879,17 +885,10 @@ private fun SetupGuideText(
     )
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = "Setup examples are available in the project README.",
+        text = "Playlists seen by dem3ux will appear here when first accessed from your frontend.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
-    Spacer(modifier = Modifier.height(12.dp))
-    TextButton(
-        onClick = onOpenSetupGuideClick,
-        contentPadding = PaddingValues(0.dp),
-    ) {
-        Text("Open setup guide")
-    }
 }
 
 @Composable
