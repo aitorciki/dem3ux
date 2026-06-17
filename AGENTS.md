@@ -55,6 +55,7 @@ Current preset direction:
 - Preserve the emulator's native intent shape where possible, examples:
   - For DuckStation, read input from the native `bootPath` extra and forward `bootPath` with the selected entry.
   - For Flycast, read input from intent data, preserve the frontend-provided `android.intent.action.VIEW`, and launch the real activity with the selected entry as target data.
+  - For MAME4Droid-style commands, extract the input from the configured captured segment inside `cli_params`, preserve intent data such as machine/system selectors, and replace only that captured segment when launching the real emulator.
 - ES-DE preset integration should prefer overriding `es_find_rules.xml` emulator package rules over copying full `es_systems.xml` entries when possible.
 
 ## Bridge Contract

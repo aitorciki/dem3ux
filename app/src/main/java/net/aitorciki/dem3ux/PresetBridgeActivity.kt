@@ -7,17 +7,18 @@ class PresetBridgeActivity : BaseBridgeActivity() {
     override fun createBridgeLaunch(sourceIntent: Intent): BridgeLaunch? {
         val aliasClassName = sourceIntent.component?.className ?: componentName.className
         val preset = PresetBridges.fromAliasClassName(aliasClassName) ?: PresetBridges.duckStation
-        val inputPath = preset.inputPathFrom(sourceIntent)
+        val input = preset.inputFrom(sourceIntent)
         val targetComponents = preset.targetComponents
 
-        if (targetComponents.isEmpty() || inputPath.isNullOrBlank()) {
+        if (targetComponents.isEmpty() || input == null || input.inputPath.isBlank()) {
             return null
         }
 
         return BridgeLaunch(
-            inputPath = inputPath,
+            inputPath = input.inputPath,
             targetComponents = targetComponents,
             targetAction = sourceIntent.action,
+            embeddedExtraReplacement = input.embeddedExtraReplacement,
         )
     }
 }

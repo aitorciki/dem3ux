@@ -249,6 +249,32 @@
             "status": "generated"
         },
         {
+            "id": "mame4droid-current",
+            "displayName": "Mame4droid Current",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.Mame4droidCurrentBridgeActivity",
+            "targetActivities": [
+                "com.seleuco.mame4d2024/com.seleuco.mame4droid.MAME4droid"
+            ],
+            "input": {
+                "type": "extraPattern",
+                "key": "cli_params",
+                "patterns": [
+                    {
+                        "regex": "(?:^|\\s)\\Q-flop1\\E\\s*'([^']+)'"
+                    },
+                    {
+                        "regex": "(?:^|\\s)\\Q-cart\\E\\s*'([^']+)'"
+                    }
+                ]
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "MAME4DROID-CURRENT"
+                }
+            },
+            "status": "generated"
+        },
+        {
             "id": "mastergear",
             "displayName": "Mastergear",
             "aliasClassName": "net.aitorciki.dem3ux.presets.MastergearBridgeActivity",

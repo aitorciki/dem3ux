@@ -183,6 +183,23 @@ internal object PresetBridges {
             esDeEmulatorName = "FPSE-NG",
         )
 
+    internal val mame4droidCurrent: PresetBridge =
+        PresetBridge(
+            id = "mame4droid-current",
+            displayName = "Mame4droid Current",
+            aliasClassName = "net.aitorciki.dem3ux.presets.Mame4droidCurrentBridgeActivity",
+            targetActivities =
+                listOf(
+                    "com.seleuco.mame4d2024/com.seleuco.mame4droid.MAME4droid",
+                ),
+            inputExtraPatterns =
+                listOf(
+                    EmbeddedExtraPattern(key = "cli_params", regex = "(?:^|\\s)\\Q-flop1\\E\\s*'([^']+)'", group = 1),
+                    EmbeddedExtraPattern(key = "cli_params", regex = "(?:^|\\s)\\Q-cart\\E\\s*'([^']+)'", group = 1),
+                ),
+            esDeEmulatorName = "MAME4DROID-CURRENT",
+        )
+
     internal val mastergear: PresetBridge =
         PresetBridge(
             id = "mastergear",
@@ -311,6 +328,7 @@ internal object PresetBridges {
             fmsx,
             fpse,
             fpseNg,
+            mame4droidCurrent,
             mastergear,
             mdEmu,
             msxEmu,
@@ -338,6 +356,7 @@ internal object PresetBridges {
             "net.aitorciki.dem3ux.presets.FmsxBridgeActivity" -> fmsx
             "net.aitorciki.dem3ux.presets.FpseBridgeActivity" -> fpse
             "net.aitorciki.dem3ux.presets.FpseNgBridgeActivity" -> fpseNg
+            "net.aitorciki.dem3ux.presets.Mame4droidCurrentBridgeActivity" -> mame4droidCurrent
             "net.aitorciki.dem3ux.presets.MastergearBridgeActivity" -> mastergear
             "net.aitorciki.dem3ux.presets.MdEmuBridgeActivity" -> mdEmu
             "net.aitorciki.dem3ux.presets.MsxEmuBridgeActivity" -> msxEmu

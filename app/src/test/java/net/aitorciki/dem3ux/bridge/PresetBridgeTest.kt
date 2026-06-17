@@ -123,6 +123,33 @@ class PresetBridgeTest {
     }
 
     @Test
+    fun `embedded extra pattern extracts quoted filesystem path`() {
+        val preset = mame4DroidPreset()
+        val inputPath = "/storage/emulated/0/roms/cpc/Game Disk.m3u"
+        val sourceIntent = Intent().putExtra("cli_params", "-rompath '/roms;cpc' -flop1 '$inputPath'")
+
+        assertEquals(inputPath, preset.inputFrom(sourceIntent)?.inputPath)
+    }
+
+    @Test
+    fun `embedded extra pattern extracts quoted SAF uri`() {
+        val preset = mame4DroidPreset()
+        val inputPath = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fcpc%2FGame.m3u"
+        val sourceIntent = Intent().putExtra("cli_params", "-rompath '/roms;cpc' -flop1 '$inputPath'")
+
+        assertEquals(inputPath, preset.inputFrom(sourceIntent)?.inputPath)
+    }
+
+    @Test
+    fun `embedded extra pattern extracts quoted FileProvider uri`() {
+        val preset = mame4DroidPreset()
+        val inputPath = "content://org.es_de.frontend.files/external/Documents/roms/cpc/Game.m3u"
+        val sourceIntent = Intent().putExtra("cli_params", "-rompath '/roms;cpc' -flop1 '$inputPath'")
+
+        assertEquals(inputPath, preset.inputFrom(sourceIntent)?.inputPath)
+    }
+
+    @Test
     fun `Flycast preset uses selected entry as target data with view action`() {
         val inputPath = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fdc%2FGame.m3u"
         val selectedEntry = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fdc%2FDisc%201.chd"
@@ -141,4 +168,22 @@ class PresetBridgeTest {
         assertEquals(PresetBridges.flycast.targetComponent, targetIntent.component)
         assertEquals(selectedEntry, targetIntent.data.toString())
     }
+
+    private fun mame4DroidPreset(): PresetBridge =
+        PresetBridge(
+            id = "mame4droid-current",
+            aliasClassName = "net.aitorciki.dem3ux.presets.Mame4droidCurrentBridgeActivity",
+            targetActivities = listOf("com.seleuco.mame4d2024/com.seleuco.mame4droid.MainActivity"),
+            inputExtraPatterns =
+                listOf(
+                    EmbeddedExtraPattern(
+                        key = "cli_params",
+                        regex = "(?:^|\\s)${Regex.escape("-flop1")}\\s*'([^']+)'",
+                    ),
+                    EmbeddedExtraPattern(
+                        key = "cli_params",
+                        regex = "(?:^|\\s)${Regex.escape("-cart")}\\s*'([^']+)'",
+                    ),
+                ),
+        )
 }

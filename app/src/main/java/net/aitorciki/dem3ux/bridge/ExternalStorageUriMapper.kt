@@ -12,7 +12,7 @@ object ExternalStorageUriMapper {
         uriString: String,
         persistedTreeUris: List<String>,
     ): String? {
-        val documentId = documentId(uriString) ?: return null
+        val documentId = documentId(uriString) ?: rawExternalStorageDocumentId(uriString) ?: return null
         val matchingTree =
             matchingTreeUri(
                 documentId = documentId,
@@ -32,7 +32,7 @@ object ExternalStorageUriMapper {
         uriString: String,
         persistedTreeUris: List<String>,
     ): Boolean {
-        val documentId = documentId(uriString) ?: return false
+        val documentId = documentId(uriString) ?: rawExternalStorageDocumentId(uriString) ?: return false
         return matchingTreeUri(
             documentId = documentId,
             persistedTreeUris = persistedTreeUris,
@@ -52,6 +52,30 @@ object ExternalStorageUriMapper {
         }
 
         return rawDocumentId.decodeUrl()
+    }
+
+    internal fun rawExternalStorageDocumentId(path: String): String? {
+        val normalizedPath = path.substringBefore('?').substringBefore('#')
+        return when {
+            normalizedPath.startsWith("/storage/emulated/0/") -> {
+                "primary:${normalizedPath.removePrefix("/storage/emulated/0/")}"
+            }
+
+            normalizedPath.startsWith("/storage/") -> {
+                val relativePath = normalizedPath.removePrefix("/storage/")
+                val volume = relativePath.substringBefore('/', missingDelimiterValue = "")
+                val pathInVolume = relativePath.substringAfter('/', missingDelimiterValue = "")
+                if (volume.isBlank() || pathInVolume.isBlank() || volume == "emulated") {
+                    null
+                } else {
+                    "$volume:$pathInVolume"
+                }
+            }
+
+            else -> {
+                null
+            }
+        }
     }
 
     private fun treeUri(uriString: String): TreeUri? {

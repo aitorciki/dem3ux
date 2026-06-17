@@ -211,12 +211,12 @@ private fun String.romCarriers(): List<RomCarrier> =
     }
 
 private fun List<CommandAnalysis>.generatedPresetCatalogEntries(): List<BridgePresetCatalogEntry> =
-    filter { analysis -> analysis.status == Status.Likely }
-        .filter { analysis -> analysis.carriers.singleOrNull()?.kind in setOf("data", "extra") }
+    filter { analysis -> analysis.status == Status.Likely || analysis.canGenerateEmbeddedExtraPreset() }
+        .filter { analysis -> analysis.carriers.singleOrNull()?.canGeneratePresetInput() == true }
         .groupBy { analysis -> requireNotNull(analysis.emulatorName) }
         .mapNotNull { (emulatorName, analyses) ->
             val first = analyses.first()
-            val carrier = first.carriers.singleOrNull() ?: return@mapNotNull null
+            val input = analyses.bridgePresetInput() ?: return@mapNotNull null
             val id = emulatorName.presetId()
             val override = validatedPresetOverrides[emulatorName]
             BridgePresetCatalogEntry(
@@ -224,11 +224,42 @@ private fun List<CommandAnalysis>.generatedPresetCatalogEntries(): List<BridgePr
                 displayName = override?.displayName ?: emulatorName.presetDisplayName(),
                 aliasClassName = override?.aliasClassName ?: "net.aitorciki.dem3ux${emulatorName.suggestedAlias()}",
                 targetActivities = first.targetPackages,
-                input = carrier.bridgePresetInput(),
+                input = input,
                 integrations = BridgePresetIntegrations(esDe = BridgePresetEsDeIntegration(emulator = emulatorName)),
                 status = if (override == null) "generated" else "validated",
             )
         }.sortedBy { preset -> preset.id }
+
+private fun List<CommandAnalysis>.bridgePresetInput(): BridgePresetInput? {
+    val carriers = mapNotNull { analysis -> analysis.carriers.singleOrNull() }
+    val first = carriers.firstOrNull() ?: return null
+
+    return if (carriers.all { carrier -> carrier.canMergeWith(first) }) {
+        when {
+            first.kind == "extra" && first.embedded -> {
+                BridgePresetInput(
+                    type = "extraPattern",
+                    key = requireNotNull(first.key),
+                    patterns =
+                        carriers
+                            .flatMap(RomCarrier::supportedEmbeddedExtraPatterns)
+                            .distinct(),
+                )
+            }
+
+            else -> {
+                first.bridgePresetInput()
+            }
+        }
+    } else {
+        null
+    }
+}
+
+private fun RomCarrier.canMergeWith(other: RomCarrier): Boolean =
+    kind == other.kind &&
+        key == other.key &&
+        embedded == other.embedded
 
 private data class ValidatedPresetOverride(
     val displayName: String,
@@ -251,10 +282,52 @@ private val validatedPresetOverrides =
 
 private fun RomCarrier.bridgePresetInput(): BridgePresetInput =
     when (kind) {
-        "data" -> BridgePresetInput(type = "data")
-        "extra" -> BridgePresetInput(type = "extra", key = requireNotNull(key))
-        else -> error("Unsupported preset input carrier: $kind")
+        "data" -> {
+            BridgePresetInput(type = "data")
+        }
+
+        "extra" -> {
+            if (embedded) {
+                BridgePresetInput(
+                    type = "extraPattern",
+                    key = requireNotNull(key),
+                    patterns = supportedEmbeddedExtraPatterns(),
+                )
+            } else {
+                BridgePresetInput(type = "extra", key = requireNotNull(key))
+            }
+        }
+
+        else -> {
+            error("Unsupported preset input carrier: $kind")
+        }
     }
+
+private fun CommandAnalysis.canGenerateEmbeddedExtraPreset(): Boolean {
+    val carrier = carriers.singleOrNull() ?: return false
+    return status == Status.Review && carrier.canGenerateEmbeddedExtraPresetInput()
+}
+
+private fun RomCarrier.canGeneratePresetInput(): Boolean =
+    kind == "data" || (kind == "extra" && (!embedded || canGenerateEmbeddedExtraPresetInput()))
+
+private fun RomCarrier.canGenerateEmbeddedExtraPresetInput(): Boolean =
+    kind == "extra" &&
+        key == "cli_params" &&
+        embedded &&
+        supportedEmbeddedExtraPatterns().isNotEmpty()
+
+private fun RomCarrier.supportedEmbeddedExtraPatterns(): List<BridgePresetInputPattern> =
+    mame4DroidEmbeddedInputFlags
+        .filter { flag -> value.contains(flag) }
+        .map { flag ->
+            BridgePresetInputPattern(
+                regex = "(?:^|\\s)${Regex.escape(flag)}\\s*'([^']+)'",
+                group = 1,
+            )
+        }
+
+private val mame4DroidEmbeddedInputFlags = listOf("-flop1", "-cart")
 
 private fun String.containsRomVariable(): Boolean = romVariables.any { variable -> variable in this }
 

@@ -13,10 +13,12 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import net.aitorciki.dem3ux.bridge.BridgeInputType
 import net.aitorciki.dem3ux.bridge.BridgeTargetIntentFactory
+import net.aitorciki.dem3ux.bridge.EmbeddedExtraPattern
 import net.aitorciki.dem3ux.bridge.ExternalStorageUriMapper
 import net.aitorciki.dem3ux.data.Dem3uxDatabaseProvider
 import net.aitorciki.dem3ux.data.PlaylistRepository
 import java.io.File
+import java.io.FileNotFoundException
 
 abstract class BaseBridgeActivity : ComponentActivity() {
     private var pendingBridgeLaunch: BridgeLaunch? = null
@@ -96,7 +98,7 @@ abstract class BaseBridgeActivity : ComponentActivity() {
                 return@launch
             }
 
-            val grantableSelectedEntry = selectedEntry.mapThroughPersistedTreeGrant()
+            val grantableSelectedEntry = selectedEntry.mapContentUriThroughPersistedTreeGrant()
 
             launchTargetEmulator(
                 bridgeLaunch = bridgeLaunch,
@@ -122,6 +124,7 @@ abstract class BaseBridgeActivity : ComponentActivity() {
                     targetAction = bridgeLaunch.targetAction,
                     inputPath = inputPath,
                     selectedEntry = selectedEntry,
+                    embeddedExtraReplacement = bridgeLaunch.embeddedExtraReplacement,
                 )
 
             try {
@@ -172,13 +175,20 @@ abstract class BaseBridgeActivity : ComponentActivity() {
                     }
 
                     else -> {
-                        File(inputPath).readText()
+                        val readableInputPath = inputPath.mapThroughPersistedTreeGrant()
+                        if (readableInputPath != inputPath) {
+                            contentResolver.openInputStream(readableInputPath.toUri())?.bufferedReader()?.use { reader ->
+                                reader.readText()
+                            }
+                        } else {
+                            File(inputPath).readText()
+                        }
                     }
                 }
             }.onFailure { error ->
                 logBridgeFailure("Failed to read playlist content", error)
             }.getOrElse { error ->
-                return PlaylistContentResult(securityException = error as? SecurityException)
+                return PlaylistContentResult(securityException = error.asPermissionException())
             }
 
         return PlaylistContentResult(content = content)
@@ -191,12 +201,26 @@ abstract class BaseBridgeActivity : ComponentActivity() {
                 persistedReadableTreeUris(),
         ) ?: this
 
+    private fun String.mapContentUriThroughPersistedTreeGrant(): String =
+        if (ExternalStorageUriMapper.documentId(this) != null) {
+            mapThroughPersistedTreeGrant()
+        } else {
+            this
+        }
+
     private fun String.requiresFolderAccessForForwarding(): Boolean =
         ExternalStorageUriMapper.documentId(this) != null &&
             !ExternalStorageUriMapper.hasPersistedTreeGrant(
                 uriString = this,
                 persistedTreeUris = persistedReadableTreeUris(),
             )
+
+    private fun Throwable.asPermissionException(): SecurityException? =
+        when {
+            this is SecurityException -> this
+            this is FileNotFoundException && message?.contains("EACCES") == true -> SecurityException(message, this)
+            else -> null
+        }
 
     private fun persistedReadableTreeUris(): List<String> =
         contentResolver.persistedUriPermissions
@@ -218,17 +242,20 @@ abstract class BaseBridgeActivity : ComponentActivity() {
         val inputPath: String,
         val targetComponents: List<ComponentName>,
         val targetAction: String? = null,
+        val embeddedExtraReplacement: EmbeddedExtraPattern? = null,
         val requestedFolderAccess: Boolean = false,
     ) {
         constructor(
             inputPath: String,
             targetComponent: ComponentName,
             targetAction: String? = null,
+            embeddedExtraReplacement: EmbeddedExtraPattern? = null,
             requestedFolderAccess: Boolean = false,
         ) : this(
             inputPath = inputPath,
             targetComponents = listOf(targetComponent),
             targetAction = targetAction,
+            embeddedExtraReplacement = embeddedExtraReplacement,
             requestedFolderAccess = requestedFolderAccess,
         )
     }

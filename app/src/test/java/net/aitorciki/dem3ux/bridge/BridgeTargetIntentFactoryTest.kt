@@ -209,4 +209,32 @@ class BridgeTargetIntentFactoryTest {
 
         assertEquals(setOf(Intent.CATEGORY_LEANBACK_LAUNCHER), targetIntent.categories)
     }
+
+    @Test
+    fun `replaces embedded input path inside configured extra and preserves source data`() {
+        val inputPath = "/storage/emulated/0/roms/cpc/Game Disk.m3u"
+        val selectedEntry = "/storage/emulated/0/roms/cpc/Game Disk Side A.dsk"
+        val sourceIntent =
+            Intent(Intent.ACTION_VIEW)
+                .setData("cpc6128".toUri())
+                .putExtra("cli_params", "-rompath '/roms;cpc' -flop1 '$inputPath'")
+
+        val targetIntent =
+            BridgeTargetIntentFactory.build(
+                sourceIntent = sourceIntent,
+                targetComponent = targetComponent,
+                targetAction = sourceIntent.action,
+                inputPath = inputPath,
+                selectedEntry = selectedEntry,
+                embeddedExtraReplacement =
+                    EmbeddedExtraPattern(
+                        key = "cli_params",
+                        regex = "(?:^|\\s)${Regex.escape("-flop1")}\\s*'([^']+)'",
+                    ),
+            )
+
+        assertEquals(Intent.ACTION_VIEW, targetIntent.action)
+        assertEquals("cpc6128", targetIntent.data.toString())
+        assertEquals("-rompath '/roms;cpc' -flop1 '$selectedEntry'", targetIntent.getStringExtra("cli_params"))
+    }
 }

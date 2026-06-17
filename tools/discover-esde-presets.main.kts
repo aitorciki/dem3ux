@@ -188,7 +188,7 @@ private fun analyzeCommand(
         if (carriers.size > 1) {
             review("Multiple ROM carriers found: ${carriers.joinToString { carrier -> carrier.display }}.")
         }
-        if (carriers.any { carrier -> carrier.embedded }) {
+        if (carriers.any { carrier -> carrier.embedded && !carrier.canGenerateEmbeddedExtraPresetInput() }) {
             review("ROM variable is embedded inside a larger carrier value.")
         }
         if (targetPackages.any { target -> "/" !in target }) {
@@ -301,6 +301,14 @@ private val romVariables = listOf("%ROM%", "%ROMSAF%", "%ROMPROVIDER%", "%ROMRAW
 private fun String.containsRomVariable(): Boolean = romVariables.any { variable -> variable in this }
 
 private fun String.hasEmbeddedRomVariable(): Boolean = this !in romVariables
+
+private fun RomCarrier.canGenerateEmbeddedExtraPresetInput(): Boolean =
+    kind == "extra" &&
+        key == "cli_params" &&
+        embedded &&
+        mame4DroidEmbeddedInputFlags.any { flag -> value.contains(flag) }
+
+private val mame4DroidEmbeddedInputFlags = listOf("-flop1", "-cart")
 
 private fun String.flags(): List<String> =
     buildList {

@@ -12,6 +12,7 @@ object BridgeTargetIntentFactory {
         targetAction: String? = null,
         inputPath: String,
         selectedEntry: String,
+        embeddedExtraReplacement: EmbeddedExtraPattern? = null,
     ): Intent {
         val targetIntent =
             Intent(targetAction).apply {
@@ -31,7 +32,13 @@ object BridgeTargetIntentFactory {
         sourceIntent.extras?.keySet().orEmpty().forEach { key ->
             if (!key.startsWith(DEM3UX_EXTRA_PREFIX)) {
                 val value = sourceIntent.getExtraValue(key)
-                val replacement = value.replaceInputPath(inputPath = inputPath, selectedEntry = selectedEntry)
+                val replacement =
+                    value.replaceInputPath(
+                        key = key,
+                        inputPath = inputPath,
+                        selectedEntry = selectedEntry,
+                        embeddedExtraReplacement = embeddedExtraReplacement,
+                    )
                 putExtra(targetIntent, key, replacement)
             }
         }
@@ -75,10 +82,16 @@ object BridgeTargetIntentFactory {
     }
 
     private fun Any?.replaceInputPath(
+        key: String,
         inputPath: String,
         selectedEntry: String,
+        embeddedExtraReplacement: EmbeddedExtraPattern?,
     ): Any? =
         when (this) {
+            is String if embeddedExtraReplacement?.key == key -> {
+                embeddedExtraReplacement.replaceInputPath(extraValue = this, selectedEntry = selectedEntry)
+            }
+
             inputPath -> {
                 selectedEntry
             }

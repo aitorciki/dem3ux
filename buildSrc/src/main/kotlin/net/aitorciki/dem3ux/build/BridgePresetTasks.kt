@@ -124,6 +124,11 @@ data class BridgePresetCatalogEntry(
     val status: String? = null,
 ) {
     val inputExtraKey: String? = input.key.takeIf { input.type == "extra" }
+    val inputExtraPatterns: List<BridgePresetInputPattern> =
+        input.patterns
+            .orEmpty()
+            .takeIf { input.type == "extraPattern" }
+            .orEmpty()
     val propertyName: String = displayName.presetPropertyName()
 }
 
@@ -131,6 +136,13 @@ data class BridgePresetCatalogEntry(
 data class BridgePresetInput(
     val type: String,
     val key: String? = null,
+    val patterns: List<BridgePresetInputPattern>? = null,
+)
+
+@Serializable
+data class BridgePresetInputPattern(
+    val regex: String,
+    val group: Int = 1,
 )
 
 @Serializable
@@ -267,10 +279,36 @@ private fun BridgePresetCatalogEntry.presetBridgeInitializer(presetBridgeClass: 
             if (inputExtraKey != null) {
                 add("inputExtraKey = %S,\n", inputExtraKey)
             }
+            if (inputExtraPatterns.isNotEmpty()) {
+                add("inputExtraPatterns = %L,\n", inputExtraPatternsCode())
+            }
             integrations?.esDe?.emulator?.let { emulator -> add("esDeEmulatorName = %S,\n", emulator) }
         }.unindent()
         .add(")")
         .build()
+
+private fun BridgePresetCatalogEntry.inputExtraPatternsCode(): CodeBlock {
+    val patternClass = ClassName(PRESET_BRIDGE_PACKAGE, "EmbeddedExtraPattern")
+    val inputKey = requireNotNull(input.key)
+
+    return CodeBlock
+        .builder()
+        .add("%M(\n", LIST_OF)
+        .indent()
+        .apply {
+            inputExtraPatterns.forEach { pattern ->
+                add(
+                    "%T(key = %S, regex = %S, group = %L),\n",
+                    patternClass,
+                    inputKey,
+                    pattern.regex,
+                    pattern.group,
+                )
+            }
+        }.unindent()
+        .add(")")
+        .build()
+}
 
 private fun List<String>.listOfStringsCode(): CodeBlock =
     CodeBlock

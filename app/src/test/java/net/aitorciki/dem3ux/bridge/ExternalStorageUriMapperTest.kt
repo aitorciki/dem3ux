@@ -138,4 +138,70 @@ class ExternalStorageUriMapperTest {
 
         assertEquals(false, hasGrant)
     }
+
+    @Test
+    fun `maps primary raw external storage path through persisted tree grant`() {
+        val mappedUri =
+            ExternalStorageUriMapper.mapToPersistedTreeUri(
+                uriString = "/storage/emulated/0/Documents/roms/amstradcpc/the pawn.m3u",
+                persistedTreeUris =
+                    listOf(
+                        "content://com.android.externalstorage.documents/tree/primary%3ADocuments%2Froms",
+                    ),
+            )
+
+        assertEquals(
+            "content://com.android.externalstorage.documents/tree/" +
+                "primary%3ADocuments%2Froms/document/" +
+                "primary%3ADocuments%2Froms%2Famstradcpc%2Fthe%20pawn.m3u",
+            mappedUri,
+        )
+    }
+
+    @Test
+    fun `maps removable raw external storage path through persisted tree grant`() {
+        val mappedUri =
+            ExternalStorageUriMapper.mapToPersistedTreeUri(
+                uriString = "/storage/F9EA-FDD4/ROMs/psx/Game.m3u",
+                persistedTreeUris =
+                    listOf(
+                        "content://com.android.externalstorage.documents/tree/F9EA-FDD4%3AROMs",
+                    ),
+            )
+
+        assertEquals(
+            "content://com.android.externalstorage.documents/tree/" +
+                "F9EA-FDD4%3AROMs/document/" +
+                "F9EA-FDD4%3AROMs%2Fpsx%2FGame.m3u",
+            mappedUri,
+        )
+    }
+
+    @Test
+    fun `ignores unrelated persisted tree grant for raw external storage path`() {
+        val mappedUri =
+            ExternalStorageUriMapper.mapToPersistedTreeUri(
+                uriString = "/storage/emulated/0/Documents/roms/amstradcpc/the pawn.m3u",
+                persistedTreeUris =
+                    listOf(
+                        "content://com.android.externalstorage.documents/tree/primary%3ADocuments%2Fother",
+                    ),
+            )
+
+        assertNull(mappedUri)
+    }
+
+    @Test
+    fun `detects matching persisted tree grant for raw external storage path`() {
+        val hasGrant =
+            ExternalStorageUriMapper.hasPersistedTreeGrant(
+                uriString = "/storage/emulated/0/Documents/roms/amstradcpc/the pawn.m3u",
+                persistedTreeUris =
+                    listOf(
+                        "content://com.android.externalstorage.documents/tree/primary%3ADocuments%2Froms",
+                    ),
+            )
+
+        assertEquals(true, hasGrant)
+    }
 }

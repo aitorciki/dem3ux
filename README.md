@@ -64,7 +64,7 @@ Any frontend that uses Android intents to launch emulators should work with dem3
 
 There are two ways to configure the bridge:
 
-- Through bundled per-emulator [presets](https://github.com/aitorciki/dem3ux/blob/main/presets/bridge-presets.json): dem3ux knows how to forward specific intent context to many emulators supported by popular frontends. In this mode, dem3ux "impersonates" the actual emulator, and the frontend invokes dem3ux as if it was invoking the emulator. This is the recommended setup mechanism, as it requires very little manual integration. For some frontends (currently ES-DE) setup can be fully performed from inside dem3ux's UI.
+- Through bundled per-emulator [presets](https://github.com/aitorciki/dem3ux/blob/main/presets/bridge-presets.json): dem3ux knows how to forward specific intent context to many emulators supported by popular frontends, including data-based launches, extra-based launches, and known embedded path arguments. In this mode, dem3ux "impersonates" the actual emulator, and the frontend invokes dem3ux as if it was invoking the emulator. This is the recommended setup mechanism, as it requires very little manual integration. For some frontends (currently ES-DE) setup can be fully performed from inside dem3ux's UI.
 - Manually, by creating a new emulator entry for dem3ux in your frontend, and providing the required parameters to identify the target emulator and playlist/game:
   - Frontends must be configured to use dem3ux's bridge activity instead of the emulator activity: `net.aitorciki.dem3ux/.BridgeActivity`.
   - `dem3ux.target.activity` extra (required): target emulator activity as a flattened Android component string, such as `com.github.stenzek.duckstation/.EmulationActivity`.
