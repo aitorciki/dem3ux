@@ -11,6 +11,8 @@ import com.squareup.kotlinpoet.TypeSpec
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import nl.adaptivity.xmlutil.XmlDeclMode
+import nl.adaptivity.xmlutil.core.XmlVersion
 import nl.adaptivity.xmlutil.serialization.XML
 import nl.adaptivity.xmlutil.serialization.XmlElement
 import nl.adaptivity.xmlutil.serialization.XmlSerialName
@@ -208,9 +210,11 @@ internal val bridgePresetJson =
     }
 
 private val xml =
-    XML {
+    XML.v1 {
         indentString = "    "
         repairNamespaces = true
+        xmlDeclMode = XmlDeclMode.None
+        xmlVersion = XmlVersion.XML10
     }
 
 internal fun java.io.File.readBridgePresetCatalog(): BridgePresetCatalog =
