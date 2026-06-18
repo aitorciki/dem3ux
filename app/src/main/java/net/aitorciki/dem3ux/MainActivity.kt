@@ -287,6 +287,7 @@ private fun Dem3uxApp(
                                     setupFrontends = uiState.setupFrontends,
                                     setupStep = setupStep,
                                     setupState = uiState.esDeSetup,
+                                    useTwoPane = useTwoPane,
                                     onFrontendClick = { frontendId ->
                                         if (frontendId == SETUP_FRONTEND_ES_DE) {
                                             setupStep = SetupStep.EsDe
@@ -554,16 +555,32 @@ private fun SetupContent(
     setupFrontends: List<SetupFrontendUi>,
     setupStep: SetupStep,
     setupState: EsDeSetupUiState,
+    useTwoPane: Boolean,
     onFrontendClick: (String) -> Unit,
     onChooseEsDeFolderClick: () -> Unit,
     onPresetSelectedChange: (String, Boolean) -> Unit,
     onSaveClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    if (useTwoPane) {
+        SetupTwoPaneContent(
+            setupFrontends = setupFrontends,
+            selectedFrontendId = setupStep.selectedFrontendId,
+            setupState = setupState,
+            onFrontendClick = onFrontendClick,
+            onChooseEsDeFolderClick = onChooseEsDeFolderClick,
+            onPresetSelectedChange = onPresetSelectedChange,
+            onSaveClick = onSaveClick,
+            modifier = modifier,
+        )
+        return
+    }
+
     when (setupStep) {
         SetupStep.Frontends -> {
             SetupFrontendListContent(
                 setupFrontends = setupFrontends,
+                selectedFrontendId = null,
                 onFrontendClick = onFrontendClick,
                 modifier = modifier,
             )
@@ -581,9 +598,52 @@ private fun SetupContent(
     }
 }
 
+private val SetupStep.selectedFrontendId: String?
+    get() =
+        when (this) {
+            SetupStep.Frontends -> null
+            SetupStep.EsDe -> SETUP_FRONTEND_ES_DE
+        }
+
+@Composable
+private fun SetupTwoPaneContent(
+    setupFrontends: List<SetupFrontendUi>,
+    selectedFrontendId: String?,
+    setupState: EsDeSetupUiState,
+    onFrontendClick: (String) -> Unit,
+    onChooseEsDeFolderClick: () -> Unit,
+    onPresetSelectedChange: (String, Boolean) -> Unit,
+    onSaveClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(modifier = modifier.fillMaxSize()) {
+        SetupFrontendListContent(
+            setupFrontends = setupFrontends,
+            selectedFrontendId = selectedFrontendId,
+            onFrontendClick = onFrontendClick,
+            modifier = Modifier.weight(0.42f),
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        VerticalDivider(modifier = Modifier.fillMaxHeight())
+        Spacer(modifier = Modifier.width(16.dp))
+        if (selectedFrontendId == SETUP_FRONTEND_ES_DE) {
+            EsDeSetupContent(
+                setupState = setupState,
+                onChooseEsDeFolderClick = onChooseEsDeFolderClick,
+                onPresetSelectedChange = onPresetSelectedChange,
+                onSaveClick = onSaveClick,
+                modifier = Modifier.weight(0.58f),
+            )
+        } else {
+            EmptySetupDetail(modifier = Modifier.weight(0.58f))
+        }
+    }
+}
+
 @Composable
 private fun SetupFrontendListContent(
     setupFrontends: List<SetupFrontendUi>,
+    selectedFrontendId: String?,
     onFrontendClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -606,10 +666,12 @@ private fun SetupFrontendListContent(
                 setupFrontends.forEachIndexed { index, frontend ->
                     SetupFrontendRow(
                         frontend = frontend,
+                        selected = frontend.id == selectedFrontendId,
                         shape =
                             animatedListCardShape(
                                 index = index,
                                 count = setupFrontends.size,
+                                selected = frontend.id == selectedFrontendId,
                             ),
                         onClick = { onFrontendClick(frontend.id) },
                     )
@@ -622,14 +684,26 @@ private fun SetupFrontendListContent(
 @Composable
 private fun SetupFrontendRow(
     frontend: SetupFrontendUi,
+    selected: Boolean,
     shape: Shape,
     onClick: () -> Unit,
 ) {
     val enabled = frontend.installed
+    val containerColor by
+        animateColorAsState(
+            targetValue =
+                if (selected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                },
+            animationSpec = tween(durationMillis = LIST_ITEM_COLOR_ANIMATION_MILLIS),
+            label = "setupFrontendCardContainerColor",
+        )
 
     Card(
         modifier = Modifier.alpha(if (enabled) 1f else 0.56f),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
         shape = shape,
     ) {
         Row(
@@ -657,6 +731,23 @@ private fun SetupFrontendRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+@Composable
+private fun EmptySetupDetail(modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxSize()) {
+        Text(
+            text = "Select a frontend",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "Frontend-specific emulator configuration will appear here.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -1274,11 +1365,31 @@ private fun HelpContentPreview() {
 @Composable
 private fun SetupContentPreview() {
     Dem3uxTheme {
-        PreviewScreenFrame {
+        PreviewDestinationFrame(title = "Setup") {
             SetupContent(
                 setupFrontends = previewSetupFrontends,
                 setupStep = SetupStep.Frontends,
                 setupState = previewSetupState,
+                useTwoPane = false,
+                onFrontendClick = {},
+                onChooseEsDeFolderClick = {},
+                onPresetSelectedChange = { _, _ -> },
+                onSaveClick = {},
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Setup tablet landscape", device = "spec:width=1280dp,height=800dp,dpi=240")
+@Composable
+private fun SetupContentTabletLandscapePreview() {
+    Dem3uxTheme {
+        PreviewDestinationFrame(title = "Setup") {
+            SetupContent(
+                setupFrontends = previewSetupFrontends,
+                setupStep = SetupStep.EsDe,
+                setupState = previewSetupState,
+                useTwoPane = true,
                 onFrontendClick = {},
                 onChooseEsDeFolderClick = {},
                 onPresetSelectedChange = { _, _ -> },
@@ -1292,11 +1403,33 @@ private fun SetupContentPreview() {
 @Composable
 private fun SetupFrontendListContentPreview() {
     Dem3uxTheme {
-        PreviewScreenFrame {
+        PreviewDestinationFrame(title = "Setup") {
             SetupFrontendListContent(
                 setupFrontends = previewSetupFrontends,
+                selectedFrontendId = null,
                 onFrontendClick = {},
             )
+        }
+    }
+}
+
+@Composable
+private fun PreviewDestinationFrame(
+    title: String,
+    content: @Composable () -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            AppTopBar(
+                title = title,
+                onMenuClick = {},
+            )
+        },
+    ) { contentPadding ->
+        Surface(modifier = Modifier.fillMaxSize().padding(contentPadding)) {
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+                content()
+            }
         }
     }
 }
