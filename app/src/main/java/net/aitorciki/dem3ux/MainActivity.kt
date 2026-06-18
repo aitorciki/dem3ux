@@ -227,7 +227,7 @@ private fun Dem3uxApp(
                     },
                     snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
                     floatingActionButton = {
-                        if (destination == MainDestination.Playlists) {
+                        if (destination == MainDestination.Playlists && uiState.selectedPlaylist == null) {
                             FloatingActionButton(onClick = { openDocumentLauncher.launch(arrayOf("*/*")) }) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_open_file),
