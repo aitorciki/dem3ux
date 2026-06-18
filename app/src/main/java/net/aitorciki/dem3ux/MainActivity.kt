@@ -9,6 +9,10 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
@@ -26,7 +30,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -36,6 +41,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
@@ -53,6 +59,7 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,6 +70,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
@@ -74,6 +82,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -93,6 +102,12 @@ private enum class MainDestination {
     Setup,
     Help,
 }
+
+private val ListItemOuterCorner = 16.dp
+private val ListItemInnerCorner = 4.dp
+private val ListItemGap = 4.dp
+private const val LIST_ITEM_SHAPE_ANIMATION_MILLIS = 250
+private const val LIST_ITEM_COLOR_ANIMATION_MILLIS = 250
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -317,6 +332,55 @@ private fun Dem3uxTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
+private fun animatedListCardShape(
+    index: Int,
+    count: Int,
+    selected: Boolean = false,
+): Shape {
+    val topCorner = if (selected || count <= 1 || index == 0) ListItemOuterCorner else ListItemInnerCorner
+    val bottomCorner = if (selected || count <= 1 || index == count - 1) ListItemOuterCorner else ListItemInnerCorner
+    val shapeAnimationSpec =
+        tween<Dp>(
+            durationMillis = LIST_ITEM_SHAPE_ANIMATION_MILLIS,
+            easing = FastOutSlowInEasing,
+        )
+    val topStart by animateDpAsState(
+        targetValue = topCorner,
+        animationSpec = shapeAnimationSpec,
+        label = "listCardTopStart",
+    )
+    val topEnd by animateDpAsState(
+        targetValue = topCorner,
+        animationSpec = shapeAnimationSpec,
+        label = "listCardTopEnd",
+    )
+    val bottomEnd by animateDpAsState(
+        targetValue = bottomCorner,
+        animationSpec = shapeAnimationSpec,
+        label = "listCardBottomEnd",
+    )
+    val bottomStart by animateDpAsState(
+        targetValue = bottomCorner,
+        animationSpec = shapeAnimationSpec,
+        label = "listCardBottomStart",
+    )
+
+    return RoundedCornerShape(
+        topStart = topStart,
+        topEnd = topEnd,
+        bottomEnd = bottomEnd,
+        bottomStart = bottomStart,
+    )
+}
+
+@Composable
+private fun TrailingSelectionControl(content: @Composable () -> Unit) {
+    CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides Dp.Unspecified) {
+        content()
+    }
+}
+
+@Composable
 private fun TwoPaneContent(
     uiState: Dem3uxUiState,
     onPlaylistClick: (Long) -> Unit,
@@ -328,6 +392,7 @@ private fun TwoPaneContent(
     Row(modifier = modifier.fillMaxSize()) {
         PlaylistList(
             playlists = uiState.playlists,
+            selectedPlaylistId = uiState.selectedPlaylist?.id,
             onPlaylistClick = onPlaylistClick,
             onOpenSetupGuideClick = onOpenSetupGuideClick,
             onOpenSetupClick = onOpenSetupClick,
@@ -362,7 +427,7 @@ private fun PlaylistDetailTopBar(
                 Text(
                     text = title,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    overflow = TextOverflow.MiddleEllipsis,
                 )
                 Text(
                     text = subtitle,
@@ -547,12 +612,22 @@ private fun SetupContent(
                     )
                 }
             } else {
-                items(installedPresets, key = { preset -> preset.id }) { preset ->
-                    EsDePresetRow(
-                        preset = preset,
-                        enabled = setupState.hasFolderAccess,
-                        onSelectedChange = { selected -> onPresetSelectedChange(preset.id, selected) },
-                    )
+                item {
+                    Column(verticalArrangement = Arrangement.spacedBy(ListItemGap)) {
+                        installedPresets.forEachIndexed { index, preset ->
+                            EsDePresetRow(
+                                preset = preset,
+                                enabled = setupState.hasFolderAccess,
+                                shape =
+                                    animatedListCardShape(
+                                        index = index,
+                                        count = installedPresets.size,
+                                        selected = preset.selected,
+                                    ),
+                                onSelectedChange = { selected -> onPresetSelectedChange(preset.id, selected) },
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -571,18 +646,32 @@ private fun SetupContent(
 private fun EsDePresetRow(
     preset: EsDeSetupPresetUi,
     enabled: Boolean,
+    shape: Shape,
     onSelectedChange: (Boolean) -> Unit,
 ) {
+    val containerColor by
+        animateColorAsState(
+            targetValue =
+                if (preset.selected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                },
+            animationSpec = tween(durationMillis = LIST_ITEM_COLOR_ANIMATION_MILLIS),
+            label = "presetCardContainerColor",
+        )
+
     Card(
         modifier = Modifier.alpha(if (enabled) 1f else 0.56f),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        shape = shape,
     ) {
         Row(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .clickable(enabled = enabled) { onSelectedChange(!preset.selected) }
-                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (preset.installedTargetIcon != null) {
@@ -603,11 +692,13 @@ private fun EsDePresetRow(
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
-            Checkbox(
-                checked = preset.selected,
-                onCheckedChange = onSelectedChange,
-                enabled = enabled,
-            )
+            TrailingSelectionControl {
+                Checkbox(
+                    checked = preset.selected,
+                    onCheckedChange = onSelectedChange,
+                    enabled = enabled,
+                )
+            }
         }
     }
 }
@@ -619,6 +710,7 @@ private fun PlaylistList(
     onOpenSetupGuideClick: () -> Unit,
     onOpenSetupClick: () -> Unit,
     modifier: Modifier = Modifier,
+    selectedPlaylistId: Long? = null,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         if (playlists.isEmpty()) {
@@ -627,10 +719,18 @@ private fun PlaylistList(
                 onOpenSetupClick = onOpenSetupClick,
             )
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(playlists, key = { playlist -> playlist.id }) { playlist ->
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(ListItemGap)) {
+                itemsIndexed(playlists, key = { _, playlist -> playlist.id }) { index, playlist ->
+                    val selected = playlist.id == selectedPlaylistId
                     PlaylistCard(
                         playlist = playlist,
+                        selected = selected,
+                        shape =
+                            animatedListCardShape(
+                                index = index,
+                                count = playlists.size,
+                                selected = selected,
+                            ),
                         onClick = { onPlaylistClick(playlist.id) },
                     )
                 }
@@ -642,16 +742,31 @@ private fun PlaylistList(
 @Composable
 private fun PlaylistCard(
     playlist: PlaylistSummaryUi,
+    selected: Boolean,
+    shape: Shape,
     onClick: () -> Unit,
 ) {
+    val containerColor by
+        animateColorAsState(
+            targetValue =
+                if (selected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                },
+            animationSpec = tween(durationMillis = LIST_ITEM_COLOR_ANIMATION_MILLIS),
+            label = "playlistCardContainerColor",
+        )
+
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        shape = shape,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(
                 text = playlist.displayName,
                 style = MaterialTheme.typography.titleMedium,
@@ -713,10 +828,16 @@ private fun PlaylistDetail(
         )
         Spacer(modifier = Modifier.height(16.dp))
 
-        LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            items(playlist.entries, key = { entry -> entry.index }) { entry ->
+        LazyColumn(verticalArrangement = Arrangement.spacedBy(ListItemGap)) {
+            itemsIndexed(playlist.entries, key = { _, entry -> entry.index }) { index, entry ->
                 PlaylistEntryRow(
                     entry = entry,
+                    shape =
+                        animatedListCardShape(
+                            index = index,
+                            count = playlist.entries.size,
+                            selected = entry.selected,
+                        ),
                     onClick = { onEntryClick(playlist.id, entry.index) },
                 )
             }
@@ -727,36 +848,40 @@ private fun PlaylistDetail(
 @Composable
 private fun PlaylistEntryRow(
     entry: PlaylistEntryUi,
+    shape: Shape,
     onClick: () -> Unit,
 ) {
+    val containerColor by
+        animateColorAsState(
+            targetValue =
+                if (entry.selected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant
+                },
+            animationSpec = tween(durationMillis = LIST_ITEM_COLOR_ANIMATION_MILLIS),
+            label = "playlistEntryCardContainerColor",
+        )
+
     Card(
         modifier =
             Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick),
-        colors =
-            CardDefaults.cardColors(
-                containerColor =
-                    if (entry.selected) {
-                        MaterialTheme.colorScheme.primaryContainer
-                    } else {
-                        MaterialTheme.colorScheme.surfaceVariant
-                    },
-            ),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        shape = shape,
     ) {
-        Row(modifier = Modifier.padding(14.dp)) {
-            RadioButton(
-                selected = entry.selected,
-                onClick = onClick,
-            )
-            Spacer(modifier = Modifier.width(8.dp))
+        Row(
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = entry.displayName,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                    overflow = TextOverflow.MiddleEllipsis,
                 )
                 Text(
                     text = entry.rawLine,
@@ -764,6 +889,12 @@ private fun PlaylistEntryRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
+                )
+            }
+            TrailingSelectionControl {
+                RadioButton(
+                    selected = entry.selected,
+                    onClick = onClick,
                 )
             }
         }
