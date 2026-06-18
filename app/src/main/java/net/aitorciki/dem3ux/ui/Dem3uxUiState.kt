@@ -5,8 +5,17 @@ import android.graphics.Bitmap
 data class Dem3uxUiState(
     val playlists: List<PlaylistSummaryUi> = emptyList(),
     val selectedPlaylist: PlaylistDetailUi? = null,
+    val setupFrontends: List<SetupFrontendUi> = emptyList(),
     val esDeSetup: EsDeSetupUiState = EsDeSetupUiState(),
     val importMessage: String? = null,
+)
+
+data class SetupFrontendUi(
+    val id: String,
+    val displayName: String,
+    val description: String,
+    val installed: Boolean,
+    val installedIcon: Bitmap?,
 )
 
 data class EsDeSetupUiState(

@@ -94,6 +94,8 @@ import net.aitorciki.dem3ux.ui.EsDeSetupUiState
 import net.aitorciki.dem3ux.ui.PlaylistDetailUi
 import net.aitorciki.dem3ux.ui.PlaylistEntryUi
 import net.aitorciki.dem3ux.ui.PlaylistSummaryUi
+import net.aitorciki.dem3ux.ui.SETUP_FRONTEND_ES_DE
+import net.aitorciki.dem3ux.ui.SetupFrontendUi
 
 private const val SETUP_GUIDE_URL = "https://github.com/aitorciki/dem3ux#frontend-integration"
 
@@ -101,6 +103,11 @@ private enum class MainDestination {
     Playlists,
     Setup,
     Help,
+}
+
+private enum class SetupStep {
+    Frontends,
+    EsDe,
 }
 
 private val ListItemOuterCorner = 16.dp
@@ -156,6 +163,7 @@ private fun Dem3uxApp(
     val coroutineScope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
     var destination by rememberSaveable { mutableStateOf(MainDestination.Playlists) }
+    var setupStep by rememberSaveable { mutableStateOf(SetupStep.Frontends) }
     val openDocumentLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) {
@@ -188,10 +196,15 @@ private fun Dem3uxApp(
             }
             val openSetup: () -> Unit = {
                 destination = MainDestination.Setup
+                setupStep = SetupStep.Frontends
             }
 
             BackHandler(enabled = destination == MainDestination.Help || destination == MainDestination.Setup) {
-                destination = MainDestination.Playlists
+                if (destination == MainDestination.Setup && setupStep != SetupStep.Frontends) {
+                    setupStep = SetupStep.Frontends
+                } else {
+                    destination = MainDestination.Playlists
+                }
             }
             BackHandler(enabled = destination == MainDestination.Playlists && !useTwoPane && selectedPlaylist != null) {
                 onBackClick()
@@ -208,6 +221,9 @@ private fun Dem3uxApp(
                         versionLabel = versionLabel,
                         onDestinationClick = { selectedDestination ->
                             destination = selectedDestination
+                            if (selectedDestination == MainDestination.Setup) {
+                                setupStep = SetupStep.Frontends
+                            }
                             coroutineScope.launch { drawerState.close() }
                         },
                     )
@@ -268,7 +284,14 @@ private fun Dem3uxApp(
                                 )
                             } else if (destination == MainDestination.Setup) {
                                 SetupContent(
+                                    setupFrontends = uiState.setupFrontends,
+                                    setupStep = setupStep,
                                     setupState = uiState.esDeSetup,
+                                    onFrontendClick = { frontendId ->
+                                        if (frontendId == SETUP_FRONTEND_ES_DE) {
+                                            setupStep = SetupStep.EsDe
+                                        }
+                                    },
                                     onChooseEsDeFolderClick = { openEsDeFolderLauncher.launch(openDocumentTreeIntent()) },
                                     onPresetSelectedChange = onEsDePresetSelectedChange,
                                     onSaveClick = onSaveEsDeSetupClick,
@@ -528,6 +551,117 @@ private fun Dem3uxDrawer(
 
 @Composable
 private fun SetupContent(
+    setupFrontends: List<SetupFrontendUi>,
+    setupStep: SetupStep,
+    setupState: EsDeSetupUiState,
+    onFrontendClick: (String) -> Unit,
+    onChooseEsDeFolderClick: () -> Unit,
+    onPresetSelectedChange: (String, Boolean) -> Unit,
+    onSaveClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    when (setupStep) {
+        SetupStep.Frontends -> {
+            SetupFrontendListContent(
+                setupFrontends = setupFrontends,
+                onFrontendClick = onFrontendClick,
+                modifier = modifier,
+            )
+        }
+
+        SetupStep.EsDe -> {
+            EsDeSetupContent(
+                setupState = setupState,
+                onChooseEsDeFolderClick = onChooseEsDeFolderClick,
+                onPresetSelectedChange = onPresetSelectedChange,
+                onSaveClick = onSaveClick,
+                modifier = modifier,
+            )
+        }
+    }
+}
+
+@Composable
+private fun SetupFrontendListContent(
+    setupFrontends: List<SetupFrontendUi>,
+    onFrontendClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(ListItemGap),
+    ) {
+        item {
+            Text(
+                text = "Choose a supported frontend to configure.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        item {
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(ListItemGap)) {
+                setupFrontends.forEachIndexed { index, frontend ->
+                    SetupFrontendRow(
+                        frontend = frontend,
+                        shape =
+                            animatedListCardShape(
+                                index = index,
+                                count = setupFrontends.size,
+                            ),
+                        onClick = { onFrontendClick(frontend.id) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SetupFrontendRow(
+    frontend: SetupFrontendUi,
+    shape: Shape,
+    onClick: () -> Unit,
+) {
+    val enabled = frontend.installed
+
+    Card(
+        modifier = Modifier.alpha(if (enabled) 1f else 0.56f),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        shape = shape,
+    ) {
+        Row(
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .clickable(enabled = enabled, onClick = onClick)
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (frontend.installedIcon != null) {
+                Image(
+                    bitmap = frontend.installedIcon.asImageBitmap(),
+                    contentDescription = null,
+                    modifier = Modifier.size(32.dp),
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+            }
+            Text(
+                text = frontend.displayName,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+    }
+}
+
+@Composable
+private fun EsDeSetupContent(
     setupState: EsDeSetupUiState,
     onChooseEsDeFolderClick: () -> Unit,
     onPresetSelectedChange: (String, Boolean) -> Unit,
@@ -1142,10 +1276,26 @@ private fun SetupContentPreview() {
     Dem3uxTheme {
         PreviewScreenFrame {
             SetupContent(
+                setupFrontends = previewSetupFrontends,
+                setupStep = SetupStep.Frontends,
                 setupState = previewSetupState,
+                onFrontendClick = {},
                 onChooseEsDeFolderClick = {},
                 onPresetSelectedChange = { _, _ -> },
                 onSaveClick = {},
+            )
+        }
+    }
+}
+
+@Preview(showBackground = true, name = "Setup frontends")
+@Composable
+private fun SetupFrontendListContentPreview() {
+    Dem3uxTheme {
+        PreviewScreenFrame {
+            SetupFrontendListContent(
+                setupFrontends = previewSetupFrontends,
+                onFrontendClick = {},
             )
         }
     }
@@ -1236,15 +1386,42 @@ private val previewDetailsById =
         previewArcadeSamplerDetail.id to previewArcadeSamplerDetail,
     )
 
+private val previewSetupFrontends =
+    listOf(
+        SetupFrontendUi(
+            id = SETUP_FRONTEND_ES_DE,
+            displayName = "ES-DE",
+            description = "Configure supported emulator presets",
+            installed = true,
+            installedIcon = null,
+        ),
+        SetupFrontendUi(
+            id = "daijishou",
+            displayName = "Daijishou",
+            description = "Configure supported player definitions",
+            installed = true,
+            installedIcon = null,
+        ),
+        SetupFrontendUi(
+            id = "pegasus",
+            displayName = "Pegasus",
+            description = "Configure supported launcher entries",
+            installed = false,
+            installedIcon = null,
+        ),
+    )
+
 private val previewListState =
     Dem3uxUiState(
         playlists = previewPlaylists,
+        setupFrontends = previewSetupFrontends,
     )
 
 private val previewDetailState =
     Dem3uxUiState(
         playlists = previewPlaylists,
         selectedPlaylist = previewNebulaDriftDetail,
+        setupFrontends = previewSetupFrontends,
     )
 
 private val previewSetupState =

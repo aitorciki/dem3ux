@@ -67,6 +67,20 @@ class EsDeSetupRepository(
         return InstalledPresetTarget(icon = icon)
     }
 
+    fun installedFrontend(): InstalledFrontend? {
+        val packageManager = context.packageManager
+        if (!packageManager.hasPackage(ES_DE_PACKAGE_NAME)) {
+            return null
+        }
+
+        val icon =
+            runCatching {
+                packageManager.getApplicationIcon(ES_DE_PACKAGE_NAME).toBitmap(width = 48, height = 48)
+            }.getOrNull()
+
+        return InstalledFrontend(icon = icon)
+    }
+
     private fun findRulesFile(treeUri: Uri): DocumentFile? = customSystemsFolder(treeUri).findFile(ES_FIND_RULES_FILE)
 
     private fun createRulesFile(treeUri: Uri): DocumentFile =
@@ -82,15 +96,29 @@ class EsDeSetupRepository(
             getActivityInfoCompat(component)
             true
         }.getOrDefault(false)
+
+    private fun PackageManager.hasPackage(packageName: String): Boolean =
+        runCatching {
+            getApplicationInfoCompat(packageName)
+            true
+        }.getOrDefault(false)
 }
 
 data class InstalledPresetTarget(
     val icon: Bitmap?,
 )
 
+data class InstalledFrontend(
+    val icon: Bitmap?,
+)
+
 private const val ES_FIND_RULES_FILE = "es_find_rules.xml"
+private const val ES_DE_PACKAGE_NAME = "org.es_de.frontend"
 private const val PREFERENCES_NAME = "es_de_setup"
 private const val KEY_CUSTOM_SYSTEMS_URI = "custom_systems_uri"
 
 @Suppress("DEPRECATION")
 private fun PackageManager.getActivityInfoCompat(component: android.content.ComponentName) = getActivityInfo(component, 0)
+
+@Suppress("DEPRECATION")
+private fun PackageManager.getApplicationInfoCompat(packageName: String) = getApplicationInfo(packageName, 0)

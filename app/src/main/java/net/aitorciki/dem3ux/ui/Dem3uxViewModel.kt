@@ -50,6 +50,7 @@ class Dem3uxViewModel(
             Dem3uxUiState(
                 playlists = sortedPlaylists.map { playlist -> playlist.toSummaryUi() },
                 selectedPlaylist = selectedPlaylist?.toDetailUi(),
+                setupFrontends = buildSetupFrontendsUi(),
                 esDeSetup = setupState,
                 importMessage = message,
             )
@@ -262,6 +263,20 @@ class Dem3uxViewModel(
                     .map { preset -> preset.toSetupPresetUi(selected = preset.id in selectedPresetIds) },
         )
 
+    private fun buildSetupFrontendsUi(): List<SetupFrontendUi> {
+        val installedFrontend = esDeSetupRepository.installedFrontend()
+
+        return listOf(
+            SetupFrontendUi(
+                id = SETUP_FRONTEND_ES_DE,
+                displayName = "ES-DE",
+                description = "Configure supported emulator presets",
+                installed = installedFrontend != null,
+                installedIcon = installedFrontend?.icon,
+            ),
+        )
+    }
+
     private fun PresetBridge.toSetupPresetUi(selected: Boolean): EsDeSetupPresetUi {
         val installedTarget = esDeSetupRepository.installedPresetTarget(this)
 
@@ -315,3 +330,4 @@ private fun Long.toRelativeLabel(): String {
 }
 
 private const val TAG = "dem3ux"
+const val SETUP_FRONTEND_ES_DE = "es_de"
