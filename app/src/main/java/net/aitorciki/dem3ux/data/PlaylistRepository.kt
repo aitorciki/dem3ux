@@ -52,6 +52,13 @@ class PlaylistRepository(
         playlistDao.updateSelectedEntry(playlistId = playlistId, entryIndex = entryIndex)
     }
 
+    suspend fun deletePlaylist(playlistId: Long) {
+        database.withTransaction {
+            playlistDao.deleteEntries(playlistId)
+            playlistDao.deletePlaylist(playlistId)
+        }
+    }
+
     private suspend fun upsertPlaylist(
         sourcePath: String,
         existing: PlaylistEntity?,

@@ -72,6 +72,16 @@ class Dem3uxViewModel(
         selectedPlaylistId.value = null
     }
 
+    fun deletePlaylist(playlistId: Long) {
+        viewModelScope.launch {
+            repository.deletePlaylist(playlistId)
+            if (selectedPlaylistId.value == playlistId) {
+                selectedPlaylistId.value = null
+            }
+            importMessage.value = "Playlist removed."
+        }
+    }
+
     fun selectEntry(
         playlistId: Long,
         entryIndex: Int,

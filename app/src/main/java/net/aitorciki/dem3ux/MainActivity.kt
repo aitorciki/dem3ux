@@ -18,6 +18,7 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,11 +33,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -113,6 +117,7 @@ private enum class SetupStep {
 private val ListItemOuterCorner = 16.dp
 private val ListItemInnerCorner = 4.dp
 private val ListItemGap = 4.dp
+private val DropdownMenuCorner = 16.dp
 private const val LIST_ITEM_SHAPE_ANIMATION_MILLIS = 250
 private const val LIST_ITEM_COLOR_ANIMATION_MILLIS = 250
 
@@ -136,6 +141,7 @@ fun Dem3uxApp() {
         versionLabel = "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
         onPlaylistClick = viewModel::selectPlaylist,
         onBackClick = viewModel::clearSelectedPlaylist,
+        onPlaylistRemoveClick = viewModel::deletePlaylist,
         onEntryClick = viewModel::selectEntry,
         onOpenPlaylistClick = viewModel::importPlaylist,
         onEsDeFolderSelected = viewModel::selectEsDeCustomSystemsFolder,
@@ -151,6 +157,7 @@ private fun Dem3uxApp(
     versionLabel: String,
     onPlaylistClick: (Long) -> Unit,
     onBackClick: () -> Unit,
+    onPlaylistRemoveClick: (Long) -> Unit,
     onEntryClick: (Long, Int) -> Unit,
     onOpenPlaylistClick: (Uri) -> Unit,
     onEsDeFolderSelected: (Uri, Int) -> Unit,
@@ -164,6 +171,7 @@ private fun Dem3uxApp(
     val uriHandler = LocalUriHandler.current
     var destination by rememberSaveable { mutableStateOf(MainDestination.Playlists) }
     var setupStep by rememberSaveable { mutableStateOf(SetupStep.Frontends) }
+    var playlistPendingRemovalId by rememberSaveable { mutableStateOf<Long?>(null) }
     val openDocumentLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) {
@@ -188,6 +196,7 @@ private fun Dem3uxApp(
         BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
             val useTwoPane = maxWidth >= 840.dp && maxHeight >= 600.dp
             val selectedPlaylist = uiState.selectedPlaylist
+            val playlistPendingRemoval = uiState.playlists.firstOrNull { playlist -> playlist.id == playlistPendingRemovalId }
             val openDrawer: () -> Unit = {
                 coroutineScope.launch { drawerState.open() }
             }
@@ -211,6 +220,33 @@ private fun Dem3uxApp(
             }
             BackHandler(enabled = drawerState.isOpen) {
                 coroutineScope.launch { drawerState.close() }
+            }
+
+            if (playlistPendingRemoval != null) {
+                AlertDialog(
+                    onDismissRequest = { playlistPendingRemovalId = null },
+                    title = { Text("Remove playlist?") },
+                    text = {
+                        Text(
+                            "Remove ${playlistPendingRemoval.displayName} from dem3ux? This does not delete the .m3u or game files.",
+                        )
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                onPlaylistRemoveClick(playlistPendingRemoval.id)
+                                playlistPendingRemovalId = null
+                            },
+                        ) {
+                            Text("Remove")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { playlistPendingRemovalId = null }) {
+                            Text("Cancel")
+                        }
+                    },
+                )
             }
 
             ModalNavigationDrawer(
@@ -302,6 +338,7 @@ private fun Dem3uxApp(
                                 TwoPaneContent(
                                     uiState = uiState,
                                     onPlaylistClick = onPlaylistClick,
+                                    onPlaylistRemoveClick = { playlist -> playlistPendingRemovalId = playlist.id },
                                     onEntryClick = onEntryClick,
                                     onOpenSetupGuideClick = openSetupGuide,
                                     onOpenSetupClick = openSetup,
@@ -311,6 +348,7 @@ private fun Dem3uxApp(
                                 PlaylistList(
                                     playlists = uiState.playlists,
                                     onPlaylistClick = onPlaylistClick,
+                                    onPlaylistRemoveClick = { playlist -> playlistPendingRemovalId = playlist.id },
                                     onOpenSetupGuideClick = openSetupGuide,
                                     onOpenSetupClick = openSetup,
                                     modifier = Modifier.weight(1f),
@@ -408,6 +446,7 @@ private fun TrailingSelectionControl(content: @Composable () -> Unit) {
 private fun TwoPaneContent(
     uiState: Dem3uxUiState,
     onPlaylistClick: (Long) -> Unit,
+    onPlaylistRemoveClick: (PlaylistSummaryUi) -> Unit,
     onEntryClick: (Long, Int) -> Unit,
     onOpenSetupGuideClick: () -> Unit,
     onOpenSetupClick: () -> Unit,
@@ -418,6 +457,7 @@ private fun TwoPaneContent(
             playlists = uiState.playlists,
             selectedPlaylistId = uiState.selectedPlaylist?.id,
             onPlaylistClick = onPlaylistClick,
+            onPlaylistRemoveClick = onPlaylistRemoveClick,
             onOpenSetupGuideClick = onOpenSetupGuideClick,
             onOpenSetupClick = onOpenSetupClick,
             modifier = Modifier.weight(0.42f),
@@ -932,6 +972,7 @@ private fun EsDePresetRow(
 private fun PlaylistList(
     playlists: List<PlaylistSummaryUi>,
     onPlaylistClick: (Long) -> Unit,
+    onPlaylistRemoveClick: (PlaylistSummaryUi) -> Unit,
     onOpenSetupGuideClick: () -> Unit,
     onOpenSetupClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -957,6 +998,7 @@ private fun PlaylistList(
                                 selected = selected,
                             ),
                         onClick = { onPlaylistClick(playlist.id) },
+                        onRemoveClick = { onPlaylistRemoveClick(playlist) },
                     )
                 }
             }
@@ -970,7 +1012,9 @@ private fun PlaylistCard(
     selected: Boolean,
     shape: Shape,
     onClick: () -> Unit,
+    onRemoveClick: () -> Unit,
 ) {
+    var menuExpanded by remember { mutableStateOf(false) }
     val containerColor by
         animateColorAsState(
             targetValue =
@@ -992,13 +1036,53 @@ private fun PlaylistCard(
         shape = shape,
     ) {
         Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
-            Text(
-                text = playlist.displayName,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = playlist.displayName,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Box(
+                    modifier = Modifier.width(20.dp),
+                    contentAlignment = Alignment.CenterEnd,
+                ) {
+                    TrailingSelectionControl {
+                        IconButton(
+                            onClick = { menuExpanded = true },
+                            modifier = Modifier.size(20.dp),
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_more_vert),
+                                contentDescription = "Playlist options",
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                    DropdownMenu(
+                        expanded = menuExpanded,
+                        onDismissRequest = { menuExpanded = false },
+                        shape = RoundedCornerShape(DropdownMenuCorner),
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Delete") },
+                            onClick = {
+                                menuExpanded = false
+                                onRemoveClick()
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_delete),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            },
+                        )
+                    }
+                }
+            }
             Text(
                 text = playlist.sourcePath,
                 modifier = Modifier.basicMarquee(),
@@ -1281,6 +1365,13 @@ private fun Dem3uxAppInteractivePreview() {
         onBackClick = {
             uiState = uiState.copy(selectedPlaylist = null)
         },
+        onPlaylistRemoveClick = { playlistId ->
+            uiState =
+                uiState.copy(
+                    playlists = uiState.playlists.filterNot { playlist -> playlist.id == playlistId },
+                    selectedPlaylist = uiState.selectedPlaylist?.takeUnless { playlist -> playlist.id == playlistId },
+                )
+        },
         onEntryClick = onEntryClick@{ playlistId, entryIndex ->
             val selectedPlaylist = uiState.selectedPlaylist ?: return@onEntryClick
             if (selectedPlaylist.id != playlistId) {
@@ -1322,6 +1413,7 @@ private fun Dem3uxAppListPreview() {
         versionLabel = PREVIEW_VERSION_LABEL,
         onPlaylistClick = {},
         onBackClick = {},
+        onPlaylistRemoveClick = {},
         onEntryClick = { _, _ -> },
         onOpenPlaylistClick = {},
         onEsDeFolderSelected = { _, _ -> },
@@ -1339,6 +1431,7 @@ private fun Dem3uxAppDetailPreview() {
         versionLabel = PREVIEW_VERSION_LABEL,
         onPlaylistClick = {},
         onBackClick = {},
+        onPlaylistRemoveClick = {},
         onEntryClick = { _, _ -> },
         onOpenPlaylistClick = {},
         onEsDeFolderSelected = { _, _ -> },
