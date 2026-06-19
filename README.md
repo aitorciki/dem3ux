@@ -187,11 +187,12 @@ Daijishō's native [DuckStation](https://github.com/TapiocaFox/Daijishou/blob/ma
 
 To use dem3ux's DuckStation preset, just edit the player config and replace the component:
 
-```text
--n net.aitorciki.dem3ux/.presets.DuckStationBridgeActivity
--e bootPath {file.uri}
---activity-clear-task
---activity-clear-top
+```diff
+- -n com.github.stenzek.duckstation/.EmulationActivity
++ -n net.aitorciki.dem3ux/.presets.DuckStationBridgeActivity
+  -e bootPath {file.uri}
+  --activity-clear-task
+  --activity-clear-top
 ```
 
 This applies to other emulators with a corresponding dem3ux preset.
