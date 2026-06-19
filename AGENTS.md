@@ -130,6 +130,8 @@ Treat path and URI conversion as core domain logic.
 
 ## Testing
 
+After code changes, use the `./gradlew spotlessApply && ./gradlew verify` loop by default before reporting completion. This keeps formatting consistent and catches compile, lint, and test issues early.
+
 Prioritize unit tests for:
 
 - `.m3u` parsing.
