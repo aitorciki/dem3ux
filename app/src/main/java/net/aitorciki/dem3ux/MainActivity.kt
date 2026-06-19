@@ -347,6 +347,7 @@ private fun Dem3uxApp(
                             } else if (uiState.selectedPlaylist == null) {
                                 PlaylistList(
                                     playlists = uiState.playlists,
+                                    playlistsLoaded = uiState.playlistsLoaded,
                                     onPlaylistClick = onPlaylistClick,
                                     onPlaylistRemoveClick = { playlist -> playlistPendingRemovalId = playlist.id },
                                     onOpenSetupGuideClick = openSetupGuide,
@@ -455,6 +456,7 @@ private fun TwoPaneContent(
     Row(modifier = modifier.fillMaxSize()) {
         PlaylistList(
             playlists = uiState.playlists,
+            playlistsLoaded = uiState.playlistsLoaded,
             selectedPlaylistId = uiState.selectedPlaylist?.id,
             onPlaylistClick = onPlaylistClick,
             onPlaylistRemoveClick = onPlaylistRemoveClick,
@@ -971,6 +973,7 @@ private fun EsDePresetRow(
 @Composable
 private fun PlaylistList(
     playlists: List<PlaylistSummaryUi>,
+    playlistsLoaded: Boolean,
     onPlaylistClick: (Long) -> Unit,
     onPlaylistRemoveClick: (PlaylistSummaryUi) -> Unit,
     onOpenSetupGuideClick: () -> Unit,
@@ -979,7 +982,9 @@ private fun PlaylistList(
     selectedPlaylistId: Long? = null,
 ) {
     Column(modifier = modifier.fillMaxSize()) {
-        if (playlists.isEmpty()) {
+        if (!playlistsLoaded) {
+            // Avoid flashing the true empty state before Room emits the first playlist list.
+        } else if (playlists.isEmpty()) {
             EmptyPlaylistList(
                 onOpenSetupGuideClick = onOpenSetupGuideClick,
                 onOpenSetupClick = onOpenSetupClick,
@@ -1640,12 +1645,14 @@ private val previewSetupFrontends =
 private val previewListState =
     Dem3uxUiState(
         playlists = previewPlaylists,
+        playlistsLoaded = true,
         setupFrontends = previewSetupFrontends,
     )
 
 private val previewDetailState =
     Dem3uxUiState(
         playlists = previewPlaylists,
+        playlistsLoaded = true,
         selectedPlaylist = previewNebulaDriftDetail,
         setupFrontends = previewSetupFrontends,
     )

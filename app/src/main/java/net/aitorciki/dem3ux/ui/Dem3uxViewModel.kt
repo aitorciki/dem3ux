@@ -49,6 +49,7 @@ class Dem3uxViewModel(
 
             Dem3uxUiState(
                 playlists = sortedPlaylists.map { playlist -> playlist.toSummaryUi() },
+                playlistsLoaded = true,
                 selectedPlaylist = selectedPlaylist?.toDetailUi(),
                 setupFrontends = buildSetupFrontendsUi(),
                 esDeSetup = setupState,
