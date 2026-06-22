@@ -3,6 +3,7 @@ package net.aitorciki.dem3ux.bridge
 import android.content.ClipData
 import android.content.ComponentName
 import android.content.Intent
+import android.os.Bundle
 import androidx.core.net.toUri
 
 object BridgeTargetIntentFactory {
@@ -29,19 +30,13 @@ object BridgeTargetIntentFactory {
                 sourceIntent.categories.orEmpty().forEach(::addCategory)
             }
 
-        sourceIntent.extras?.keySet().orEmpty().forEach { key ->
-            if (!key.startsWith(DEM3UX_EXTRA_PREFIX)) {
-                val value = sourceIntent.getExtraValue(key)
-                val replacement =
-                    value.replaceInputPath(
-                        key = key,
-                        inputPath = inputPath,
-                        selectedEntry = selectedEntry,
-                        embeddedExtraReplacement = embeddedExtraReplacement,
-                    )
-                putExtra(targetIntent, key, replacement)
-            }
-        }
+        forwardExtras(
+            sourceIntent = sourceIntent,
+            targetIntent = targetIntent,
+            inputPath = inputPath,
+            selectedEntry = selectedEntry,
+            embeddedExtraReplacement = embeddedExtraReplacement,
+        )
 
         if (selectedEntry.startsWith("content://")) {
             targetIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
@@ -51,65 +46,50 @@ object BridgeTargetIntentFactory {
         return targetIntent
     }
 
-    @Suppress("DEPRECATION")
-    private fun Intent.getExtraValue(key: String): Any? = extras?.get(key)
-
-    private fun putExtra(
-        intent: Intent,
-        name: String,
-        value: Any?,
-    ) {
-        when (value) {
-            is Boolean -> {
-                intent.putExtra(name, value)
-            }
-
-            is Int -> {
-                intent.putExtra(name, value)
-            }
-
-            is String -> {
-                intent.putExtra(name, value)
-            }
-
-            is Array<*> -> {
-                if (value.all { it is String }) {
-                    @Suppress("UNCHECKED_CAST")
-                    intent.putExtra(name, value as Array<String>)
-                }
-            }
-        }
-    }
-
-    private fun Any?.replaceInputPath(
-        key: String,
+    private fun forwardExtras(
+        sourceIntent: Intent,
+        targetIntent: Intent,
         inputPath: String,
         selectedEntry: String,
         embeddedExtraReplacement: EmbeddedExtraPattern?,
-    ): Any? =
-        when (this) {
-            is String if embeddedExtraReplacement?.key == key -> {
-                embeddedExtraReplacement.replaceInputPath(extraValue = this, selectedEntry = selectedEntry)
+    ) {
+        val sourceExtras = sourceIntent.extras ?: return
+        val forwardedBundle = Bundle(sourceExtras)
+        sourceExtras.keySet().orEmpty().forEach { key ->
+            if (key.startsWith(DEM3UX_EXTRA_PREFIX)) {
+                forwardedBundle.remove(key)
+                return@forEach
             }
 
-            inputPath -> {
-                selectedEntry
-            }
-
-            is Array<*> if all { it is String } -> {
-                map { value ->
-                    if (value == inputPath) {
-                        selectedEntry
-                    } else {
-                        value as String
+            @Suppress("DEPRECATION")
+            when (val value = forwardedBundle.get(key)) {
+                is String -> {
+                    val replacement =
+                        if (embeddedExtraReplacement?.key == key) {
+                            embeddedExtraReplacement.replaceInputPath(extraValue = value, selectedEntry = selectedEntry)
+                        } else if (value == inputPath) {
+                            selectedEntry
+                        } else {
+                            value
+                        }
+                    if (replacement != value) {
+                        forwardedBundle.putString(key, replacement)
                     }
-                }.toTypedArray()
-            }
+                }
 
-            else -> {
-                this
+                is Array<*> -> {
+                    if (value.all { it is String } && value.any { it == inputPath }) {
+                        @Suppress("UNCHECKED_CAST")
+                        forwardedBundle.putStringArray(
+                            key,
+                            (value as Array<String>).map { v -> if (v == inputPath) selectedEntry else v }.toTypedArray(),
+                        )
+                    }
+                }
             }
         }
+        targetIntent.replaceExtras(forwardedBundle)
+    }
 
     private const val PROXIED_ACTIVITY_FLAGS =
         Intent.FLAG_ACTIVITY_CLEAR_TASK or

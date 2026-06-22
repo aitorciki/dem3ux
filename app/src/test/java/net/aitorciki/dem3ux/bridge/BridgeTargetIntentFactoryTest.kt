@@ -2,6 +2,7 @@ package net.aitorciki.dem3ux.bridge
 
 import android.content.ComponentName
 import android.content.Intent
+import android.os.Bundle
 import androidx.core.net.toUri
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -12,6 +13,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
+@Suppress("DEPRECATION")
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
 class BridgeTargetIntentFactoryTest {
@@ -236,5 +238,32 @@ class BridgeTargetIntentFactoryTest {
         assertEquals(Intent.ACTION_VIEW, targetIntent.action)
         assertEquals("cpc6128", targetIntent.data.toString())
         assertEquals("-rompath '/roms;cpc' -flop1 '$selectedEntry'", targetIntent.getStringExtra("cli_params"))
+    }
+
+    @Test
+    fun `forwards previously dropped typed extras long and double unchanged`() {
+        val inputPath = "/storage/emulated/0/roms/psx/Game.m3u"
+        val selectedEntry = "/storage/emulated/0/roms/psx/Disc 1.chd"
+        val sourceIntent =
+            Intent()
+                .putExtra("elapsed", 42000L)
+                .putExtra("ratio", 1.5)
+                .putExtra("labels", doubleArrayOf(0.1, 0.2))
+                .putExtra("sizes", longArrayOf(10L, 20L))
+                .putExtra("config", Bundle().apply { putString("region", "PAL") })
+
+        val targetIntent =
+            BridgeTargetIntentFactory.build(
+                sourceIntent = sourceIntent,
+                targetComponent = targetComponent,
+                inputPath = inputPath,
+                selectedEntry = selectedEntry,
+            )
+
+        assertEquals(42000L, targetIntent.getLongExtra("elapsed", -1L))
+        assertEquals(1.5, targetIntent.getDoubleExtra("ratio", Double.NaN), 0.0)
+        assertArrayEquals(doubleArrayOf(0.1, 0.2), targetIntent.getDoubleArrayExtra("labels"), 0.0)
+        assertArrayEquals(longArrayOf(10L, 20L), targetIntent.getLongArrayExtra("sizes"))
+        assertEquals("PAL", targetIntent.getBundleExtra("config")?.getString("region"))
     }
 }
