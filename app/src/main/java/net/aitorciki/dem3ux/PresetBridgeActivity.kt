@@ -1,6 +1,7 @@
 package net.aitorciki.dem3ux
 
 import android.content.Intent
+import net.aitorciki.dem3ux.bridge.BridgeLaunch
 import net.aitorciki.dem3ux.bridge.PresetBridges
 
 class PresetBridgeActivity : BaseBridgeActivity() {
