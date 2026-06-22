@@ -15,12 +15,16 @@ import net.aitorciki.dem3ux.bridge.BridgeInputType
 import net.aitorciki.dem3ux.bridge.BridgeTargetIntentFactory
 import net.aitorciki.dem3ux.bridge.EmbeddedExtraPattern
 import net.aitorciki.dem3ux.bridge.ExternalStorageUriMapper
-import net.aitorciki.dem3ux.data.Dem3uxDatabaseProvider
 import net.aitorciki.dem3ux.data.PlaylistRepository
+import org.koin.android.ext.android.inject
+import org.koin.core.component.KoinComponent
 import java.io.File
 import java.io.FileNotFoundException
 
-abstract class BaseBridgeActivity : ComponentActivity() {
+abstract class BaseBridgeActivity :
+    ComponentActivity(),
+    KoinComponent {
+    private val playlistRepository: PlaylistRepository by inject()
     private var pendingBridgeLaunch: BridgeLaunch? = null
 
     private val openTreeLauncher =
@@ -76,7 +80,7 @@ abstract class BaseBridgeActivity : ComponentActivity() {
 
                     playlistContent?.let { content ->
                         runCatching {
-                            PlaylistRepository(Dem3uxDatabaseProvider.get(this@BaseBridgeActivity))
+                            playlistRepository
                                 .recordSeenPlaylist(sourcePath = inputPath, content = content)
                         }.onFailure { error ->
                             logBridgeFailure("Failed to record playlist", error)

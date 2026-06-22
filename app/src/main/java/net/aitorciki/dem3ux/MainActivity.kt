@@ -93,7 +93,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.launch
 import net.aitorciki.dem3ux.ui.Dem3uxUiState
 import net.aitorciki.dem3ux.ui.Dem3uxViewModel
@@ -104,6 +103,7 @@ import net.aitorciki.dem3ux.ui.PlaylistEntryUi
 import net.aitorciki.dem3ux.ui.PlaylistSummaryUi
 import net.aitorciki.dem3ux.ui.SETUP_FRONTEND_ES_DE
 import net.aitorciki.dem3ux.ui.SetupFrontendUi
+import org.koin.androidx.compose.koinViewModel
 
 private const val SETUP_GUIDE_URL = "https://github.com/aitorciki/dem3ux#frontend-integration"
 
@@ -137,7 +137,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Dem3uxApp() {
-    val viewModel: Dem3uxViewModel = viewModel()
+    val viewModel: Dem3uxViewModel = koinViewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Dem3uxApp(

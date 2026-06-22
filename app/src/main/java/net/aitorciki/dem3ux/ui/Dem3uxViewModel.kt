@@ -15,7 +15,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import net.aitorciki.dem3ux.bridge.PresetBridge
 import net.aitorciki.dem3ux.bridge.PresetBridges
-import net.aitorciki.dem3ux.data.Dem3uxDatabaseProvider
 import net.aitorciki.dem3ux.data.PlaylistRepository
 import net.aitorciki.dem3ux.data.PlaylistWithEntries
 import net.aitorciki.dem3ux.setup.EsDeFindRuleSelection
@@ -24,9 +23,9 @@ import net.aitorciki.dem3ux.setup.EsDeSetupRepository
 
 class Dem3uxViewModel(
     application: Application,
+    private val repository: PlaylistRepository,
+    private val esDeSetupRepository: EsDeSetupRepository,
 ) : AndroidViewModel(application) {
-    private val repository = PlaylistRepository(Dem3uxDatabaseProvider.get(application))
-    private val esDeSetupRepository = EsDeSetupRepository(application)
     private val selectedPlaylistId = MutableStateFlow<Long?>(null)
     private val importMessage = MutableStateFlow<String?>(null)
     private val esDeCustomSystemsUri = MutableStateFlow<Uri?>(null)
