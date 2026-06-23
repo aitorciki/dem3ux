@@ -105,6 +105,19 @@ Do not use DataStore for playlist/entry state. DataStore is acceptable later for
 
 Clearing app data removes Room playlist state and persisted SAF grants.
 
+## Migrations
+
+`@Database` has `exportSchema = true` and KSP is configured to emit schema snapshots under `app/schemas/`. The committed JSON snapshots are the source of truth for `AutoMigration` and runtime validation.
+
+`RoomPlaylistRepository` is built via `Room.databaseBuilder(...).addMigrations(*Dem3uxMigrations.ALL).fallbackToDestructiveMigrationOnDowngrade()`. On a schema bump:
+
+1. Bump `version` on `@Database` and change entities.
+2. Regenerate the new `N.json` snapshot (run `./gradlew :app:kspDebugKotlin`).
+3. Append a `Migration` (or a generated `AutoMigration` call) to `Dem3uxMigrations.ALL`.
+4. Run `./gradlew verify`.
+
+Never add `fallbackToDestructiveMigration()` for upgrades. The downgrade-only fallback is acceptable; downgrade is unsupported otherwise.
+
 ## Parsing
 
 Initial `.m3u` behavior:

@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 @Database(
     entities = [PlaylistEntity::class, PlaylistEntryEntity::class],
     version = 1,
-    exportSchema = false,
+    exportSchema = true,
 )
 abstract class Dem3uxDatabase : RoomDatabase() {
     abstract fun playlistDao(): PlaylistDao

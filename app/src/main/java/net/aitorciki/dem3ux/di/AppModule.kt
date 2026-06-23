@@ -10,6 +10,7 @@ import net.aitorciki.dem3ux.bridge.BridgeOrchestrator
 import net.aitorciki.dem3ux.bridge.PersistedTreeUrisProvider
 import net.aitorciki.dem3ux.bridge.PlaylistContentReader
 import net.aitorciki.dem3ux.data.Dem3uxDatabase
+import net.aitorciki.dem3ux.data.Dem3uxMigrations
 import net.aitorciki.dem3ux.data.PlaylistRepository
 import net.aitorciki.dem3ux.data.RoomPlaylistRepository
 import net.aitorciki.dem3ux.setup.EsDeSetupRepository
@@ -29,7 +30,9 @@ val appModule =
                     androidContext(),
                     Dem3uxDatabase::class.java,
                     "dem3ux.db",
-                ).build()
+                ).addMigrations(*Dem3uxMigrations.ALL)
+                .fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)
+                .build()
         }
         single<PlaylistRepository> { RoomPlaylistRepository(get()) }
         single<EsDeSetupRepository> { EsDeSetupRepositoryImpl(androidContext()) }

@@ -160,6 +160,10 @@ android {
     }
 }
 
+ksp {
+    arg("room.schemaLocation", "$projectDir/schemas")
+}
+
 androidComponents {
     onVariants { variant ->
         variant.sources.manifests.addGeneratedManifestFile(
