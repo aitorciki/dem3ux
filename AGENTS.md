@@ -109,12 +109,13 @@ Clearing app data removes Room playlist state and persisted SAF grants.
 
 `@Database` has `exportSchema = true` and KSP is configured to emit schema snapshots under `app/schemas/`. The committed JSON snapshots are the source of truth for `AutoMigration` and runtime validation.
 
-`RoomPlaylistRepository` is built via `Room.databaseBuilder(...).addMigrations(*Dem3uxMigrations.ALL).fallbackToDestructiveMigrationOnDowngrade()`. On a schema bump:
+`RoomPlaylistRepository` is built via `Room.databaseBuilder(...).addMigrations(*Dem3uxMigrations.ALL).fallbackToDestructiveMigrationOnDowngrade(dropAllTables = true)`. AutoMigrations declared on `@Database(autoMigrations = [...])` are auto-registered by Room; `Dem3uxMigrations.ALL` is the append-only home for manual `Migration`s only. On a schema bump:
 
 1. Bump `version` on `@Database` and change entities.
-2. Regenerate the new `N.json` snapshot (run `./gradlew :app:kspDebugKotlin`).
-3. Append a `Migration` (or a generated `AutoMigration` call) to `Dem3uxMigrations.ALL`.
-4. Run `./gradlew verify`.
+2. Regenerate the new `N.json` snapshot (run `./gradlew :app:kspDebugKotlin`). KSP will fail with a clear message if the change is not auto-inferrable (e.g. a dropped column needs a `@DeleteColumn` spec).
+3. Add an `AutoMigration(...)` entry on `@Database(autoMigrations = [...])`. For column drops (or other ambiguous ops), add an `AutoMigrationSpec` class annotated with `@DeleteColumn.Entries(...)` / `@RenameColumn.Entries(...)` / `@DeleteTable.Entries(...)` and pass it via `AutoMigration(from = N, to = N+1, spec = ...::class)`. Use the `androidx.room.migration.AutoMigrationSpec` interface (in Room 2.8.x the marker moved out of `androidx.room`).
+4. Append a manual `Migration` to `Dem3uxMigrations.ALL` only when AutoMigration cannot cover the change.
+5. Run `./gradlew verify`.
 
 Never add `fallbackToDestructiveMigration()` for upgrades. The downgrade-only fallback is acceptable; downgrade is unsupported otherwise.
 

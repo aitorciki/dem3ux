@@ -4,9 +4,8 @@ import androidx.room.withTransaction
 import kotlinx.coroutines.flow.Flow
 import net.aitorciki.dem3ux.bridge.PlaylistEntryResolver
 import net.aitorciki.dem3ux.m3u.M3uEntry
+import net.aitorciki.dem3ux.paths.PathCodec
 import java.net.URI
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 
 class RoomPlaylistRepository(
     private val database: Dem3uxDatabase,
@@ -65,7 +64,6 @@ class RoomPlaylistRepository(
                 id = existing?.id ?: 0,
                 sourcePath = sourcePath,
                 displayName = sourcePath.toDisplayName(),
-                pathKind = sourcePath.toPathKind(),
                 selectedEntryIndex = selectedIndex,
                 firstSeenAt = existing?.firstSeenAt ?: now,
                 lastSeenAt = now,
@@ -90,19 +88,11 @@ class RoomPlaylistRepository(
         )
 }
 
-fun String.toPathKind(): String =
-    when {
-        startsWith("content://") -> "safUri"
-        startsWith("file://") -> "fileUri"
-        startsWith("/") -> "filesystem"
-        else -> "unknown"
-    }
-
 fun String.toDisplayName(): String {
     val rawPath =
         runCatching {
             when {
-                startsWith("content://") -> URLDecoder.decode(URI(this).path.substringAfterLast('/'), StandardCharsets.UTF_8.name())
+                startsWith("content://") -> PathCodec.decodeStrict(URI(this).path.substringAfterLast('/'))
                 startsWith("file://") -> URI(this).path
                 else -> this
             }

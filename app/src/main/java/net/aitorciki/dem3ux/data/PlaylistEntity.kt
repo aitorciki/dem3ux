@@ -13,7 +13,6 @@ data class PlaylistEntity(
     val id: Long = 0,
     val sourcePath: String,
     val displayName: String,
-    val pathKind: String,
     val selectedEntryIndex: Int?,
     val firstSeenAt: Long,
     val lastSeenAt: Long,

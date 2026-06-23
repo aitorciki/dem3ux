@@ -1,5 +1,6 @@
 package net.aitorciki.dem3ux.m3u
 
+import net.aitorciki.dem3ux.paths.PathCodec
 import java.io.File
 
 data class M3uPlaylist(
@@ -35,7 +36,7 @@ object M3uParser {
                 }.toList()
 
         return M3uPlaylist(
-            sourcePath = normalizePath(sourcePath),
+            sourcePath = PathCodec.normalizePath(sourcePath),
             entries = entries,
         )
     }
@@ -46,38 +47,6 @@ object M3uParser {
     ): String {
         val file = File(entryPath)
         val resolvedPath = if (file.isAbsolute) entryPath else File(parentPath, entryPath).path
-        return normalizePath(resolvedPath)
-    }
-
-    private fun normalizePath(path: String): String {
-        val isAbsolute = path.startsWith("/")
-        val normalizedSegments = ArrayDeque<String>()
-
-        path.split("/").forEach { segment ->
-            when {
-                segment.isEmpty() || segment == "." -> {
-                    return@forEach
-                }
-
-                segment == ".." && normalizedSegments.isNotEmpty() && normalizedSegments.last() != ".." -> {
-                    normalizedSegments.removeLast()
-                }
-
-                segment == ".." && !isAbsolute -> {
-                    normalizedSegments.addLast(segment)
-                }
-
-                segment != ".." -> {
-                    normalizedSegments.addLast(segment)
-                }
-            }
-        }
-
-        val normalizedPath = normalizedSegments.joinToString("/")
-        return when {
-            isAbsolute && normalizedPath.isEmpty() -> "/"
-            isAbsolute -> "/$normalizedPath"
-            else -> normalizedPath
-        }
+        return PathCodec.normalizePath(resolvedPath)
     }
 }

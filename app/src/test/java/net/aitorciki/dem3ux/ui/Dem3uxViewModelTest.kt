@@ -147,7 +147,6 @@ class Dem3uxViewModelTest {
                     id = id,
                     sourcePath = sourcePath,
                     displayName = sourcePath.substringAfterLast('/').substringBeforeLast('.'),
-                    pathKind = "safUri",
                     selectedEntryIndex = 0,
                     firstSeenAt = 1000L,
                     lastSeenAt = 1000L,

@@ -1,9 +1,7 @@
 package net.aitorciki.dem3ux.bridge
 
+import net.aitorciki.dem3ux.paths.PathCodec
 import java.net.URI
-import java.net.URLDecoder
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 object ExternalStorageUriMapper {
     private const val EXTERNAL_STORAGE_AUTHORITY = "com.android.externalstorage.documents"
@@ -51,7 +49,7 @@ object ExternalStorageUriMapper {
             return null
         }
 
-        return rawDocumentId.decodeUrl()
+        return PathCodec.decodeStrict(rawDocumentId)
     }
 
     internal fun rawExternalStorageDocumentId(path: String): String? {
@@ -96,7 +94,7 @@ object ExternalStorageUriMapper {
         return TreeUri(
             scheme = uri.scheme,
             authority = uri.authority,
-            treeDocumentId = rawTreeDocumentId.decodeUrl(),
+            treeDocumentId = PathCodec.decodeStrict(rawTreeDocumentId),
         )
     }
 
@@ -114,7 +112,7 @@ object ExternalStorageUriMapper {
         authority: String,
         treeDocumentId: String,
         documentId: String,
-    ): String = "$scheme://$authority/tree/${treeDocumentId.encodeUrl()}/document/${documentId.encodeUrl()}"
+    ): String = "$scheme://$authority/tree/${PathCodec.encode(treeDocumentId)}/document/${PathCodec.encode(documentId)}"
 
     private fun String.isDescendantOf(treeDocumentId: String): Boolean {
         val documentParts = splitDocumentId() ?: return false
@@ -139,13 +137,6 @@ object ExternalStorageUriMapper {
             path = substring(volumeSeparator + 1),
         )
     }
-
-    private fun String.decodeUrl(): String = URLDecoder.decode(this, StandardCharsets.UTF_8.name())
-
-    private fun String.encodeUrl(): String =
-        URLEncoder
-            .encode(this, StandardCharsets.UTF_8.name())
-            .replace("+", "%20")
 
     private data class TreeUri(
         val scheme: String,

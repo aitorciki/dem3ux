@@ -1,6 +1,6 @@
 package net.aitorciki.dem3ux.ui
 
-import java.net.URLDecoder
+import net.aitorciki.dem3ux.paths.PathCodec
 
 internal object SourcePathLabel {
     fun format(sourcePath: String): String {
@@ -9,7 +9,7 @@ internal object SourcePathLabel {
             return documentPath.toTailLabel(alwaysPrefixEllipsis = true)
         }
 
-        val decodedPath = sourcePath.substringBefore('?').substringBefore('#').decodeUrlComponent()
+        val decodedPath = sourcePath.substringBefore('?').substringBefore('#').let(PathCodec::decodeSafe)
         return decodedPath.toTailLabel(alwaysPrefixEllipsis = sourcePath.contains('/'))
     }
 
@@ -19,7 +19,7 @@ internal object SourcePathLabel {
             return null
         }
 
-        val documentId = removePrefix(marker).substringBefore('?').substringBefore('#').decodeUrlComponent()
+        val documentId = removePrefix(marker).substringBefore('?').substringBefore('#').let(PathCodec::decodeSafe)
         return documentId.substringAfter(':', missingDelimiterValue = documentId)
     }
 
@@ -33,6 +33,4 @@ internal object SourcePathLabel {
         val shouldPrefix = alwaysPrefixEllipsis || segments.size > 3
         return if (shouldPrefix) ".../$tail" else tail
     }
-
-    private fun String.decodeUrlComponent(): String = URLDecoder.decode(this, Charsets.UTF_8.name())
 }

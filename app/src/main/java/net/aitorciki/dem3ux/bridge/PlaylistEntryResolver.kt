@@ -2,11 +2,9 @@ package net.aitorciki.dem3ux.bridge
 
 import net.aitorciki.dem3ux.m3u.M3uEntry
 import net.aitorciki.dem3ux.m3u.M3uParser
+import net.aitorciki.dem3ux.paths.PathCodec
 import java.io.File
 import java.net.URI
-import java.net.URLDecoder
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 
 object PlaylistEntryResolver {
     private const val ES_DE_FILE_PROVIDER_AUTHORITY = "org.es_de.frontend.files"
@@ -88,7 +86,7 @@ object PlaylistEntryResolver {
         }
 
         val encodedDocumentId = sourceUri.path.substringAfterLast("/document/")
-        val documentId = URLDecoder.decode(encodedDocumentId, StandardCharsets.UTF_8.name())
+        val documentId = PathCodec.decodeStrict(encodedDocumentId)
         val volumeSeparator = documentId.indexOf(':')
         if (volumeSeparator == -1) {
             return entryPath
@@ -97,12 +95,9 @@ object PlaylistEntryResolver {
         val volume = documentId.substring(0, volumeSeparator)
         val documentPath = documentId.substring(volumeSeparator + 1)
         val parentPath = documentPath.substringBeforeLast('/', missingDelimiterValue = "")
-        val resolvedPath = normalizePath(listOf(parentPath, entryPath).filter(String::isNotEmpty).joinToString("/"))
+        val resolvedPath = PathCodec.normalizePath(listOf(parentPath, entryPath).filter(String::isNotEmpty).joinToString("/"))
         val resolvedDocumentId = "$volume:$resolvedPath"
-        val encodedResolvedDocumentId =
-            URLEncoder
-                .encode(resolvedDocumentId, StandardCharsets.UTF_8.name())
-                .replace("+", "%20")
+        val encodedResolvedDocumentId = PathCodec.encode(resolvedDocumentId)
 
         return "${sourceUri.scheme}://${sourceUri.authority}/document/$encodedResolvedDocumentId"
     }
@@ -111,49 +106,16 @@ object PlaylistEntryResolver {
         sourceUri: URI,
         entryPath: String,
     ): String? {
-        val providerPath = sourceUri.rawPath?.decodeUrl() ?: return null
+        val providerPath = sourceUri.rawPath?.let(PathCodec::decodeStrict) ?: return null
         val externalPath = providerPath.removePrefix("/external/")
         if (externalPath == providerPath) {
             return null
         }
 
         val parentPath = externalPath.substringBeforeLast('/', missingDelimiterValue = "")
-        val resolvedPath = normalizePath(listOf(parentPath, entryPath).filter(String::isNotEmpty).joinToString("/"))
+        val resolvedPath = PathCodec.normalizePath(listOf(parentPath, entryPath).filter(String::isNotEmpty).joinToString("/"))
         val resolvedDocumentId = "primary:$resolvedPath"
 
-        return "content://$EXTERNAL_STORAGE_AUTHORITY/document/${resolvedDocumentId.encodeUrl()}"
+        return "content://$EXTERNAL_STORAGE_AUTHORITY/document/${PathCodec.encode(resolvedDocumentId)}"
     }
-
-    private fun normalizePath(path: String): String {
-        val normalizedSegments = ArrayDeque<String>()
-
-        path.split("/").forEach { segment ->
-            when {
-                segment.isEmpty() || segment == "." -> {
-                    return@forEach
-                }
-
-                segment == ".." && normalizedSegments.isNotEmpty() && normalizedSegments.last() != ".." -> {
-                    normalizedSegments.removeLast()
-                }
-
-                segment == ".." -> {
-                    normalizedSegments.addLast(segment)
-                }
-
-                else -> {
-                    normalizedSegments.addLast(segment)
-                }
-            }
-        }
-
-        return normalizedSegments.joinToString("/")
-    }
-
-    private fun String.decodeUrl(): String = URLDecoder.decode(this, StandardCharsets.UTF_8.name())
-
-    private fun String.encodeUrl(): String =
-        URLEncoder
-            .encode(this, StandardCharsets.UTF_8.name())
-            .replace("+", "%20")
 }
