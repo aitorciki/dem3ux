@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import net.aitorciki.dem3ux.bridge.PlaylistContentReader
 import net.aitorciki.dem3ux.bridge.PresetBridge
 import net.aitorciki.dem3ux.bridge.PresetBridges
 import net.aitorciki.dem3ux.data.PlaylistRepository
@@ -25,6 +26,7 @@ class Dem3uxViewModel(
     application: Application,
     private val repository: PlaylistRepository,
     private val esDeSetupRepository: EsDeSetupRepository,
+    private val playlistContentReader: PlaylistContentReader,
 ) : AndroidViewModel(application) {
     private val selectedPlaylistId = MutableStateFlow<Long?>(null)
     private val importMessage = MutableStateFlow<String?>(null)
@@ -94,16 +96,20 @@ class Dem3uxViewModel(
     fun importPlaylist(uri: Uri) {
         viewModelScope.launch {
             val result =
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                        val application = getApplication<Application>()
-                        application.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        val content =
-                            requireNotNull(application.contentResolver.openInputStream(uri)) { "Could not open playlist" }
-                                .bufferedReader()
-                                .use { reader -> reader.readText() }
+                runCatching {
+                    val application = getApplication<Application>()
+                    application.contentResolver
+                        .takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-                        repository.recordSeenPlaylist(sourcePath = uri.toString(), content = content)
+                    val readResult = playlistContentReader.read(uri.toString())
+                    val content = readResult.content
+                    if (readResult.securityException != null || content == null) {
+                        null
+                    } else {
+                        repository.recordSeenPlaylist(
+                            sourcePath = uri.toString(),
+                            content = content,
+                        )
                     }
                 }
 

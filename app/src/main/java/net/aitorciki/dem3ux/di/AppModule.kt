@@ -66,5 +66,5 @@ val appModule =
                 },
             )
         }
-        viewModel { Dem3uxViewModel(androidContext() as Application, get(), get()) }
+        viewModel { Dem3uxViewModel(androidContext() as Application, get(), get(), get()) }
     }

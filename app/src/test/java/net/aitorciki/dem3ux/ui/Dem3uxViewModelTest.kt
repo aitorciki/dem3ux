@@ -13,6 +13,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import net.aitorciki.dem3ux.bridge.PlaylistContentReader
+import net.aitorciki.dem3ux.bridge.PlaylistContentResult
 import net.aitorciki.dem3ux.bridge.PresetBridge
 import net.aitorciki.dem3ux.data.PlaylistEntity
 import net.aitorciki.dem3ux.data.PlaylistEntryEntity
@@ -40,6 +42,7 @@ class Dem3uxViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakePlaylistRepository: FakePlaylistRepository
     private lateinit var fakeEsDeSetupRepository: FakeEsDeSetupRepository
+    private lateinit var fakePlaylistContentReader: FakePlaylistContentReader
     private lateinit var viewModel: Dem3uxViewModel
 
     @Before
@@ -47,8 +50,15 @@ class Dem3uxViewModelTest {
         Dispatchers.setMain(testDispatcher)
         fakePlaylistRepository = FakePlaylistRepository()
         fakeEsDeSetupRepository = FakeEsDeSetupRepository()
+        fakePlaylistContentReader = FakePlaylistContentReader()
         val application = ApplicationProvider.getApplicationContext<Application>()
-        viewModel = Dem3uxViewModel(application, fakePlaylistRepository, fakeEsDeSetupRepository)
+        viewModel =
+            Dem3uxViewModel(
+                application,
+                fakePlaylistRepository,
+                fakeEsDeSetupRepository,
+                fakePlaylistContentReader,
+            )
     }
 
     @After
@@ -137,6 +147,73 @@ class Dem3uxViewModelTest {
             assertEquals(3, fakePlaylistRepository.selectEntryCalls[0].entryIndex)
         }
 
+    @Test
+    fun `importPlaylist success records playlist and updates selection`() =
+        runTest(testDispatcher) {
+            fakePlaylistRepository.playlists.value =
+                listOf(
+                    playlistWithEntries(id = 7, sourcePath = "content://test/playlist.m3u"),
+                )
+            val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
+            advanceUntilIdle()
+
+            fakePlaylistContentReader.content = "game1.chd\ngame2.chd\n"
+            fakePlaylistRepository.recordSeenPlaylistResult =
+                PlaylistLaunchSelection(
+                    playlistId = 7L,
+                    selectedEntryPath = "content://test/game1.chd",
+                )
+
+            viewModel.importPlaylist(Uri.parse("content://test/playlist.m3u"))
+            advanceUntilIdle()
+
+            assertEquals(1, fakePlaylistRepository.recordSeenPlaylistCalls.size)
+            assertEquals("content://test/playlist.m3u", fakePlaylistRepository.recordSeenPlaylistCalls[0].sourcePath)
+            assertEquals("game1.chd\ngame2.chd\n", fakePlaylistRepository.recordSeenPlaylistCalls[0].content)
+            assertEquals(
+                7L,
+                viewModel.uiState.value.selectedPlaylist
+                    ?.id,
+            )
+            assertEquals("Playlist added.", viewModel.uiState.value.importMessage)
+
+            collectJob.cancel()
+        }
+
+    @Test
+    fun `importPlaylist security exception sets error message`() =
+        runTest(testDispatcher) {
+            val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
+            advanceUntilIdle()
+
+            fakePlaylistContentReader.securityException = SecurityException("denied")
+
+            viewModel.importPlaylist(Uri.parse("content://test/playlist.m3u"))
+            advanceUntilIdle()
+
+            assertTrue(fakePlaylistRepository.recordSeenPlaylistCalls.isEmpty())
+            assertEquals("Could not import playlist.", viewModel.uiState.value.importMessage)
+
+            collectJob.cancel()
+        }
+
+    @Test
+    fun `importPlaylist null content sets error message`() =
+        runTest(testDispatcher) {
+            val collectJob = backgroundScope.launch { viewModel.uiState.collect { } }
+            advanceUntilIdle()
+
+            fakePlaylistContentReader.content = null
+
+            viewModel.importPlaylist(Uri.parse("content://test/playlist.m3u"))
+            advanceUntilIdle()
+
+            assertTrue(fakePlaylistRepository.recordSeenPlaylistCalls.isEmpty())
+            assertEquals("Could not import playlist.", viewModel.uiState.value.importMessage)
+
+            collectJob.cancel()
+        }
+
     private fun playlistWithEntries(
         id: Long,
         sourcePath: String,
@@ -169,6 +246,8 @@ private class FakePlaylistRepository : PlaylistRepository {
     val playlists = MutableStateFlow<List<PlaylistWithEntries>>(emptyList())
     val deletedPlaylistIds = mutableListOf<Long>()
     val selectEntryCalls = mutableListOf<SelectEntryCall>()
+    val recordSeenPlaylistCalls = mutableListOf<RecordSeenPlaylistCall>()
+    var recordSeenPlaylistResult: PlaylistLaunchSelection? = null
 
     override fun observePlaylistsWithEntries(): Flow<List<PlaylistWithEntries>> = playlists
 
@@ -176,7 +255,10 @@ private class FakePlaylistRepository : PlaylistRepository {
         sourcePath: String,
         content: String,
         now: Long,
-    ): PlaylistLaunchSelection? = null
+    ): PlaylistLaunchSelection? {
+        recordSeenPlaylistCalls.add(RecordSeenPlaylistCall(sourcePath, content))
+        return recordSeenPlaylistResult
+    }
 
     override suspend fun selectEntry(
         playlistId: Long,
@@ -188,6 +270,19 @@ private class FakePlaylistRepository : PlaylistRepository {
     override suspend fun deletePlaylist(playlistId: Long) {
         deletedPlaylistIds.add(playlistId)
     }
+}
+
+private data class RecordSeenPlaylistCall(
+    val sourcePath: String,
+    val content: String,
+)
+
+private class FakePlaylistContentReader : PlaylistContentReader {
+    var content: String? = null
+    var securityException: SecurityException? = null
+
+    override suspend fun read(inputPath: String): PlaylistContentResult =
+        PlaylistContentResult(content = content, securityException = securityException)
 }
 
 private data class SelectEntryCall(
