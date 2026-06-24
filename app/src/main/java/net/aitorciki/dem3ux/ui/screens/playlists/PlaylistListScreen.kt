@@ -6,6 +6,7 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -73,93 +74,134 @@ internal fun PlaylistList(
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
 
-    Column(modifier = modifier.fillMaxSize()) {
-        if (!playlistsLoaded) {
-            // Avoid flashing the true empty state before Room emits the first playlist list.
-        } else if (playlists.isEmpty()) {
-            EmptyPlaylistList(
-                onOpenSetupGuideClick = onOpenSetupGuideClick,
-                onOpenSetupClick = onOpenSetupClick,
-            )
-        } else {
-            val trimmedSearchQuery = searchQuery.trim()
-            val filteredPlaylists =
-                if (trimmedSearchQuery.isEmpty()) {
-                    playlists
-                } else {
-                    playlists.filter { playlist ->
-                        playlist.displayName.contains(trimmedSearchQuery, ignoreCase = true)
-                    }
-                }
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val searchScrollsWithList = maxHeight < 600.dp
 
-            SearchBar(
-                inputField = {
-                    SearchBarDefaults.InputField(
-                        query = searchQuery,
-                        onQueryChange = { searchQuery = it },
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (!playlistsLoaded) {
+                // Avoid flashing the true empty state before Room emits the first playlist list.
+            } else if (playlists.isEmpty()) {
+                EmptyPlaylistList(
+                    onOpenSetupGuideClick = onOpenSetupGuideClick,
+                    onOpenSetupClick = onOpenSetupClick,
+                )
+            } else {
+                val trimmedSearchQuery = searchQuery.trim()
+                val filteredPlaylists =
+                    if (trimmedSearchQuery.isEmpty()) {
+                        playlists
+                    } else {
+                        playlists.filter { playlist ->
+                            playlist.displayName.contains(trimmedSearchQuery, ignoreCase = true)
+                        }
+                    }
+
+                if (!searchScrollsWithList) {
+                    PlaylistSearchBar(
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = { searchQuery = it },
                         onSearch = {
                             searchQuery = it
                             keyboardController?.hide()
                             focusManager.clearFocus()
                         },
-                        expanded = false,
-                        onExpandedChange = {},
-                        placeholder = { Text(stringResource(R.string.search_playlists)) },
-                        trailingIcon = {
-                            if (searchQuery.isNotEmpty()) {
-                                IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ic_close),
-                                        contentDescription = stringResource(R.string.clear_search_cd),
-                                    )
-                                }
-                            }
-                        },
+                        onClearSearchClick = { searchQuery = "" },
                     )
-                },
-                expanded = false,
-                onExpandedChange = {},
-                modifier = Modifier.fillMaxWidth(),
-                windowInsets = WindowInsets(0, 0, 0, 0),
-            ) {}
-            Spacer(modifier = Modifier.height(12.dp))
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(ListItemGap)) {
-                if (filteredPlaylists.isEmpty()) {
-                    item {
-                        Box(
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 24.dp),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = stringResource(R.string.no_playlists_match_search),
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(ListItemGap)) {
+                    if (searchScrollsWithList) {
+                        item(key = "playlist-search") {
+                            PlaylistSearchBar(
+                                searchQuery = searchQuery,
+                                onSearchQueryChange = { searchQuery = it },
+                                onSearch = {
+                                    searchQuery = it
+                                    keyboardController?.hide()
+                                    focusManager.clearFocus()
+                                },
+                                onClearSearchClick = { searchQuery = "" },
                             )
                         }
+                        item(key = "playlist-search-gap") {
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
                     }
-                } else {
-                    itemsIndexed(filteredPlaylists, key = { _, playlist -> playlist.id }) { index, playlist ->
-                        val selected = playlist.id == selectedPlaylistId
-                        PlaylistCard(
-                            playlist = playlist,
-                            selected = selected,
-                            shape =
-                                animatedListCardShape(
-                                    index = index,
-                                    count = filteredPlaylists.size,
-                                    selected = selected,
-                                ),
-                            onClick = { onPlaylistClick(playlist.id) },
-                            onRemoveClick = { onPlaylistRemoveClick(playlist) },
-                        )
+
+                    if (filteredPlaylists.isEmpty()) {
+                        item {
+                            Box(
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 24.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.no_playlists_match_search),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    } else {
+                        itemsIndexed(filteredPlaylists, key = { _, playlist -> playlist.id }) { index, playlist ->
+                            val selected = playlist.id == selectedPlaylistId
+                            PlaylistCard(
+                                playlist = playlist,
+                                selected = selected,
+                                shape =
+                                    animatedListCardShape(
+                                        index = index,
+                                        count = filteredPlaylists.size,
+                                        selected = selected,
+                                    ),
+                                onClick = { onPlaylistClick(playlist.id) },
+                                onRemoveClick = { onPlaylistRemoveClick(playlist) },
+                            )
+                        }
                     }
                 }
             }
         }
     }
+}
+
+@Composable
+@OptIn(ExperimentalMaterial3Api::class)
+private fun PlaylistSearchBar(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onSearch: (String) -> Unit,
+    onClearSearchClick: () -> Unit,
+) {
+    SearchBar(
+        inputField = {
+            SearchBarDefaults.InputField(
+                query = searchQuery,
+                onQueryChange = onSearchQueryChange,
+                onSearch = onSearch,
+                expanded = false,
+                onExpandedChange = {},
+                placeholder = { Text(stringResource(R.string.search_playlists)) },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = onClearSearchClick) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.ic_close),
+                                contentDescription = stringResource(R.string.clear_search_cd),
+                            )
+                        }
+                    }
+                },
+            )
+        },
+        expanded = false,
+        onExpandedChange = {},
+        modifier = Modifier.fillMaxWidth(),
+        windowInsets = WindowInsets(0, 0, 0, 0),
+    ) {}
 }
 
 @Composable
