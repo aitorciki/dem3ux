@@ -291,13 +291,13 @@ private data class SelectEntryCall(
 )
 
 private class FakeEsDeSetupRepository : EsDeSetupRepository {
-    override fun persistCustomSystemsFolder(
+    override suspend fun persistCustomSystemsFolder(
         uri: Uri,
         grantFlags: Int,
     ) {
     }
 
-    override fun persistedCustomSystemsFolder(): Uri? = null
+    override suspend fun persistedCustomSystemsFolder(): Uri? = null
 
     override fun readFindRules(treeUri: Uri): String? = null
 

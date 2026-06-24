@@ -5,12 +5,12 @@ import android.net.Uri
 import net.aitorciki.dem3ux.bridge.PresetBridge
 
 interface EsDeSetupRepository {
-    fun persistCustomSystemsFolder(
+    suspend fun persistCustomSystemsFolder(
         uri: Uri,
         grantFlags: Int,
     )
 
-    fun persistedCustomSystemsFolder(): Uri?
+    suspend fun persistedCustomSystemsFolder(): Uri?
 
     fun readFindRules(treeUri: Uri): String?
 

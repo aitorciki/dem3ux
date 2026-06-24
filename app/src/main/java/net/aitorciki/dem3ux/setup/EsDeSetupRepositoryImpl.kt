@@ -4,18 +4,31 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import androidx.core.content.edit
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.net.toUri
+import androidx.datastore.preferences.SharedPreferencesMigration
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
 import androidx.documentfile.provider.DocumentFile
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import net.aitorciki.dem3ux.bridge.PresetBridge
+
+private val KEY_CUSTOM_SYSTEMS_URI = stringPreferencesKey("custom_systems_uri")
+
+private const val PREFERENCES_NAME = "es_de_setup"
+
+private val Context.esDeSetupDataStore by preferencesDataStore(
+    name = PREFERENCES_NAME,
+    produceMigrations = { context -> listOf(SharedPreferencesMigration(context, PREFERENCES_NAME)) },
+)
 
 class EsDeSetupRepositoryImpl(
     private val context: Context,
     private val logger: (String, Throwable?) -> Unit,
 ) : EsDeSetupRepository {
-    private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
-
-    override fun persistCustomSystemsFolder(
+    override suspend fun persistCustomSystemsFolder(
         uri: Uri,
         grantFlags: Int,
     ) {
@@ -26,17 +39,21 @@ class EsDeSetupRepositoryImpl(
             uri,
             persistableFlags,
         )
-        preferences.edit { putString(KEY_CUSTOM_SYSTEMS_URI, uri.toString()) }
+        context.esDeSetupDataStore.edit { preferences -> preferences[KEY_CUSTOM_SYSTEMS_URI] = uri.toString() }
     }
 
-    override fun persistedCustomSystemsFolder(): Uri? {
-        val uri = preferences.getString(KEY_CUSTOM_SYSTEMS_URI, null)?.let(Uri::parse) ?: return null
+    override suspend fun persistedCustomSystemsFolder(): Uri? {
+        val uri =
+            context.esDeSetupDataStore.data
+                .map { it[KEY_CUSTOM_SYSTEMS_URI] }
+                .first() ?: return null
+        val parsed = uri.toUri()
         val hasPersistedGrant =
             context.contentResolver.persistedUriPermissions.any { permission ->
-                permission.uri == uri && (permission.isReadPermission || permission.isWritePermission)
+                permission.uri == parsed && (permission.isReadPermission || permission.isWritePermission)
             }
 
-        return uri.takeIf { hasPersistedGrant }
+        return parsed.takeIf { hasPersistedGrant }
     }
 
     override fun readFindRules(treeUri: Uri): String? =
@@ -106,8 +123,6 @@ class EsDeSetupRepositoryImpl(
     private companion object {
         const val ES_FIND_RULES_FILE = "es_find_rules.xml"
         const val ES_DE_PACKAGE_NAME = "org.es_de.frontend"
-        const val PREFERENCES_NAME = "es_de_setup"
-        const val KEY_CUSTOM_SYSTEMS_URI = "custom_systems_uri"
     }
 }
 
