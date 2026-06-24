@@ -1,7 +1,10 @@
 package net.aitorciki.dem3ux.ui
 
 import android.graphics.Bitmap
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 
+@Immutable
 data class Dem3uxUiState(
     val playlists: List<PlaylistSummaryUi> = emptyList(),
     val playlistsLoaded: Boolean = false,
@@ -11,6 +14,7 @@ data class Dem3uxUiState(
     val importMessage: String? = null,
 )
 
+@Stable
 data class SetupFrontendUi(
     val id: String,
     val displayName: String,
@@ -19,6 +23,7 @@ data class SetupFrontendUi(
     val installedIcon: Bitmap?,
 )
 
+@Immutable
 data class EsDeSetupUiState(
     val customSystemsUri: String? = null,
     val presets: List<EsDeSetupPresetUi> = emptyList(),
@@ -26,6 +31,7 @@ data class EsDeSetupUiState(
     val hasFolderAccess: Boolean = customSystemsUri != null
 }
 
+@Stable
 data class EsDeSetupPresetUi(
     val id: String,
     val displayName: String,
@@ -36,6 +42,7 @@ data class EsDeSetupPresetUi(
     val selected: Boolean,
 )
 
+@Immutable
 data class PlaylistSummaryUi(
     val id: Long,
     val displayName: String,
@@ -44,6 +51,7 @@ data class PlaylistSummaryUi(
     val lastSeenLabel: String,
 )
 
+@Immutable
 data class PlaylistDetailUi(
     val id: Long,
     val displayName: String,
@@ -52,6 +60,7 @@ data class PlaylistDetailUi(
     val entries: List<PlaylistEntryUi>,
 )
 
+@Immutable
 data class PlaylistEntryUi(
     val index: Int,
     val displayName: String,
