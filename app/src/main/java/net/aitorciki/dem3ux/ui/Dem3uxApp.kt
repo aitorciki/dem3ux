@@ -6,6 +6,11 @@ import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -42,14 +47,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavDestination
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.launch
 import net.aitorciki.dem3ux.BuildConfig
 import net.aitorciki.dem3ux.R
 import net.aitorciki.dem3ux.ui.components.AppTopBar
 import net.aitorciki.dem3ux.ui.components.PlaylistDetailTopBar
+import net.aitorciki.dem3ux.ui.nav.HelpRoute
+import net.aitorciki.dem3ux.ui.nav.MainRoute
+import net.aitorciki.dem3ux.ui.nav.PlaylistsRoute
+import net.aitorciki.dem3ux.ui.nav.SetupRoute
 import net.aitorciki.dem3ux.ui.preview.PREVIEW_VERSION_LABEL
 import net.aitorciki.dem3ux.ui.preview.previewDetailsById
 import net.aitorciki.dem3ux.ui.preview.previewListState
+import net.aitorciki.dem3ux.ui.preview.previewSetupFrontends
+import net.aitorciki.dem3ux.ui.preview.previewSetupState
 import net.aitorciki.dem3ux.ui.screens.help.HelpContent
 import net.aitorciki.dem3ux.ui.screens.playlists.PlaylistDetail
 import net.aitorciki.dem3ux.ui.screens.playlists.PlaylistList
@@ -60,11 +77,7 @@ import org.koin.androidx.compose.koinViewModel
 
 private const val SETUP_GUIDE_URL = "https://github.com/aitorciki/dem3ux#frontend-integration"
 
-private enum class MainDestination {
-    Playlists,
-    Setup,
-    Help,
-}
+private const val FADE_MILLIS = 150
 
 internal enum class SetupStep {
     Frontends,
@@ -109,7 +122,7 @@ private fun Dem3uxApp(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val coroutineScope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
-    var destination by rememberSaveable { mutableStateOf(MainDestination.Playlists) }
+    val navController = rememberNavController()
     var setupStep by rememberSaveable { mutableStateOf(SetupStep.Frontends) }
     var playlistPendingRemovalId by rememberSaveable { mutableStateOf<Long?>(null) }
     val openDocumentLauncher =
@@ -143,21 +156,23 @@ private fun Dem3uxApp(
             val openSetupGuide: () -> Unit = {
                 uriHandler.openUri(SETUP_GUIDE_URL)
             }
-            val openSetup: () -> Unit = {
-                destination = MainDestination.Setup
-                setupStep = SetupStep.Frontends
-            }
-
-            BackHandler(enabled = destination == MainDestination.Help || destination == MainDestination.Setup) {
-                if (destination == MainDestination.Setup && setupStep != SetupStep.Frontends) {
+            val navigateToRoute: (MainRoute) -> Unit = { route ->
+                if (route == SetupRoute) {
                     setupStep = SetupStep.Frontends
-                } else {
-                    destination = MainDestination.Playlists
                 }
+                navController.navigate(route) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+                coroutineScope.launch { drawerState.close() }
             }
-            BackHandler(enabled = destination == MainDestination.Playlists && !useTwoPane && selectedPlaylist != null) {
-                onBackClick()
-            }
+            val openSetup: () -> Unit = { navigateToRoute(SetupRoute) }
+
+            val currentRoute = navController.currentRoute()
+
             BackHandler(enabled = drawerState.isOpen) {
                 coroutineScope.launch { drawerState.close() }
             }
@@ -193,40 +208,41 @@ private fun Dem3uxApp(
                 drawerState = drawerState,
                 drawerContent = {
                     Dem3uxDrawer(
-                        destination = destination,
+                        currentRoute = currentRoute,
                         versionLabel = versionLabel,
-                        onDestinationClick = { selectedDestination ->
-                            destination = selectedDestination
-                            if (selectedDestination == MainDestination.Setup) {
-                                setupStep = SetupStep.Frontends
-                            }
-                            coroutineScope.launch { drawerState.close() }
-                        },
+                        onRouteClick = navigateToRoute,
                     )
                 },
             ) {
                 Scaffold(
                     topBar = {
-                        when {
-                            destination == MainDestination.Help || destination == MainDestination.Setup -> {
+                        when (currentRoute) {
+                            HelpRoute, SetupRoute -> {
                                 AppTopBar(
-                                    title = if (destination == MainDestination.Help) "Help" else "Setup",
+                                    title = if (currentRoute == HelpRoute) "Help" else "Setup",
                                     onMenuClick = openDrawer,
                                 )
                             }
 
-                            !useTwoPane && selectedPlaylist != null -> {
-                                PlaylistDetailTopBar(
-                                    title = selectedPlaylist.displayName,
-                                    subtitle = selectedPlaylist.sourcePath,
-                                    onBackClick = onBackClick,
-                                )
+                            PlaylistsRoute -> {
+                                if (!useTwoPane && selectedPlaylist != null) {
+                                    PlaylistDetailTopBar(
+                                        title = selectedPlaylist.displayName,
+                                        subtitle = selectedPlaylist.sourcePath,
+                                        onBackClick = onBackClick,
+                                    )
+                                } else {
+                                    AppTopBar(
+                                        title = "dem3ux",
+                                        subtitle = if (useTwoPane) null else "Seen playlists",
+                                        onMenuClick = openDrawer,
+                                    )
+                                }
                             }
 
-                            else -> {
+                            null -> {
                                 AppTopBar(
                                     title = "dem3ux",
-                                    subtitle = if (useTwoPane) null else "Seen playlists",
                                     onMenuClick = openDrawer,
                                 )
                             }
@@ -234,7 +250,7 @@ private fun Dem3uxApp(
                     },
                     snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
                     floatingActionButton = {
-                        if (destination == MainDestination.Playlists && uiState.selectedPlaylist == null) {
+                        if (currentRoute == PlaylistsRoute && uiState.selectedPlaylist == null) {
                             FloatingActionButton(onClick = { openDocumentLauncher.launch(arrayOf("*/*")) }) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_open_file),
@@ -252,54 +268,111 @@ private fun Dem3uxApp(
                                     .padding(contentPadding)
                                     .padding(16.dp),
                         ) {
-                            if (destination == MainDestination.Help) {
-                                HelpContent(
-                                    onOpenSetupGuideClick = openSetupGuide,
-                                    onOpenSetupClick = openSetup,
-                                    modifier = Modifier.weight(1f),
-                                )
-                            } else if (destination == MainDestination.Setup) {
-                                SetupContent(
-                                    setupFrontends = uiState.setupFrontends,
-                                    setupStep = setupStep,
-                                    setupState = uiState.esDeSetup,
-                                    useTwoPane = useTwoPane,
-                                    onFrontendClick = { frontendId ->
-                                        if (frontendId == SETUP_FRONTEND_ES_DE) {
-                                            setupStep = SetupStep.EsDe
+                            NavHost(
+                                navController = navController,
+                                startDestination = PlaylistsRoute,
+                                enterTransition = { fadeIn(tween(FADE_MILLIS)) },
+                                exitTransition = { fadeOut(tween(FADE_MILLIS)) },
+                                popEnterTransition = { fadeIn(tween(FADE_MILLIS)) },
+                                popExitTransition = { fadeOut(tween(FADE_MILLIS)) },
+                            ) {
+                                composable<PlaylistsRoute> {
+                                    BackHandler(enabled = !useTwoPane && selectedPlaylist != null) {
+                                        onBackClick()
+                                    }
+
+                                    if (useTwoPane) {
+                                        TwoPaneContent(
+                                            uiState = uiState,
+                                            onPlaylistClick = onPlaylistClick,
+                                            onPlaylistRemoveClick = { playlist -> playlistPendingRemovalId = playlist.id },
+                                            onEntryClick = onEntryClick,
+                                            onOpenSetupGuideClick = openSetupGuide,
+                                            onOpenSetupClick = openSetup,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                    } else {
+                                        AnimatedContent(
+                                            targetState = uiState.selectedPlaylist,
+                                            modifier = Modifier.weight(1f),
+                                            transitionSpec = { fadeIn(tween(FADE_MILLIS)) togetherWith fadeOut(tween(FADE_MILLIS)) },
+                                            contentKey = { playlist -> playlist?.id ?: -1L },
+                                            label = "playlistSinglePaneContent",
+                                        ) { playlist ->
+                                            if (playlist == null) {
+                                                PlaylistList(
+                                                    playlists = uiState.playlists,
+                                                    playlistsLoaded = uiState.playlistsLoaded,
+                                                    onPlaylistClick = onPlaylistClick,
+                                                    onPlaylistRemoveClick = { item -> playlistPendingRemovalId = item.id },
+                                                    onOpenSetupGuideClick = openSetupGuide,
+                                                    onOpenSetupClick = openSetup,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                )
+                                            } else {
+                                                PlaylistDetail(
+                                                    playlist = playlist,
+                                                    onEntryClick = onEntryClick,
+                                                    showTitle = false,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                )
+                                            }
                                         }
-                                    },
-                                    onChooseEsDeFolderClick = { openEsDeFolderLauncher.launch(openDocumentTreeIntent()) },
-                                    onPresetSelectedChange = onEsDePresetSelectedChange,
-                                    onSaveClick = onSaveEsDeSetupClick,
-                                    modifier = Modifier.weight(1f),
-                                )
-                            } else if (useTwoPane) {
-                                TwoPaneContent(
-                                    uiState = uiState,
-                                    onPlaylistClick = onPlaylistClick,
-                                    onPlaylistRemoveClick = { playlist -> playlistPendingRemovalId = playlist.id },
-                                    onEntryClick = onEntryClick,
-                                    onOpenSetupGuideClick = openSetupGuide,
-                                    onOpenSetupClick = openSetup,
-                                    modifier = Modifier.weight(1f),
-                                )
-                            } else if (uiState.selectedPlaylist == null) {
-                                PlaylistList(
-                                    playlists = uiState.playlists,
-                                    playlistsLoaded = uiState.playlistsLoaded,
-                                    onPlaylistClick = onPlaylistClick,
-                                    onPlaylistRemoveClick = { playlist -> playlistPendingRemovalId = playlist.id },
-                                    onOpenSetupGuideClick = openSetupGuide,
-                                    onOpenSetupClick = openSetup,
-                                    modifier = Modifier.weight(1f),
-                                )
-                            } else {
-                                PlaylistDetail(
-                                    playlist = uiState.selectedPlaylist,
-                                    onEntryClick = onEntryClick,
-                                    showTitle = false,
-                                )
+                                    }
+                                }
+                                composable<SetupRoute> {
+                                    BackHandler(enabled = setupStep != SetupStep.Frontends) {
+                                        setupStep = SetupStep.Frontends
+                                    }
+
+                                    if (useTwoPane) {
+                                        SetupContent(
+                                            setupFrontends = uiState.setupFrontends,
+                                            setupStep = setupStep,
+                                            setupState = uiState.esDeSetup,
+                                            useTwoPane = true,
+                                            onFrontendClick = { frontendId ->
+                                                if (frontendId == SETUP_FRONTEND_ES_DE) {
+                                                    setupStep = SetupStep.EsDe
+                                                }
+                                            },
+                                            onChooseEsDeFolderClick = { openEsDeFolderLauncher.launch(openDocumentTreeIntent()) },
+                                            onPresetSelectedChange = onEsDePresetSelectedChange,
+                                            onSaveClick = onSaveEsDeSetupClick,
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                    } else {
+                                        AnimatedContent(
+                                            targetState = setupStep,
+                                            modifier = Modifier.weight(1f),
+                                            transitionSpec = { fadeIn(tween(FADE_MILLIS)) togetherWith fadeOut(tween(FADE_MILLIS)) },
+                                            label = "setupSinglePaneContent",
+                                        ) { targetSetupStep ->
+                                            SetupContent(
+                                                setupFrontends = uiState.setupFrontends,
+                                                setupStep = targetSetupStep,
+                                                setupState = uiState.esDeSetup,
+                                                useTwoPane = false,
+                                                onFrontendClick = { frontendId ->
+                                                    if (frontendId == SETUP_FRONTEND_ES_DE) {
+                                                        setupStep = SetupStep.EsDe
+                                                    }
+                                                },
+                                                onChooseEsDeFolderClick = { openEsDeFolderLauncher.launch(openDocumentTreeIntent()) },
+                                                onPresetSelectedChange = onEsDePresetSelectedChange,
+                                                onSaveClick = onSaveEsDeSetupClick,
+                                                modifier = Modifier.fillMaxSize(),
+                                            )
+                                        }
+                                    }
+                                }
+                                composable<HelpRoute> {
+                                    HelpContent(
+                                        onOpenSetupGuideClick = openSetupGuide,
+                                        onOpenSetupClick = openSetup,
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
                             }
                         }
                     }
@@ -310,10 +383,21 @@ private fun Dem3uxApp(
 }
 
 @Composable
+private fun androidx.navigation.NavController.currentRoute(): MainRoute? = currentBackStackEntryAsState().value?.destination?.toMainRoute()
+
+private fun NavDestination.toMainRoute(): MainRoute? =
+    when (route) {
+        PlaylistsRoute::class.qualifiedName -> PlaylistsRoute
+        SetupRoute::class.qualifiedName -> SetupRoute
+        HelpRoute::class.qualifiedName -> HelpRoute
+        else -> null
+    }
+
+@Composable
 private fun Dem3uxDrawer(
-    destination: MainDestination,
+    currentRoute: MainRoute?,
     versionLabel: String,
-    onDestinationClick: (MainDestination) -> Unit,
+    onRouteClick: (MainRoute) -> Unit,
 ) {
     ModalDrawerSheet {
         Column(modifier = Modifier.fillMaxHeight()) {
@@ -325,20 +409,20 @@ private fun Dem3uxDrawer(
             )
             NavigationDrawerItem(
                 label = { Text("Playlists") },
-                selected = destination == MainDestination.Playlists,
-                onClick = { onDestinationClick(MainDestination.Playlists) },
+                selected = currentRoute == PlaylistsRoute,
+                onClick = { onRouteClick(PlaylistsRoute) },
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
             NavigationDrawerItem(
                 label = { Text("Setup") },
-                selected = destination == MainDestination.Setup,
-                onClick = { onDestinationClick(MainDestination.Setup) },
+                selected = currentRoute == SetupRoute,
+                onClick = { onRouteClick(SetupRoute) },
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
             NavigationDrawerItem(
                 label = { Text("Help") },
-                selected = destination == MainDestination.Help,
-                onClick = { onDestinationClick(MainDestination.Help) },
+                selected = currentRoute == HelpRoute,
+                onClick = { onRouteClick(HelpRoute) },
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
             Spacer(modifier = Modifier.weight(1f))
@@ -369,52 +453,249 @@ private fun openDocumentTreeIntent(): Intent =
 @Composable
 private fun Dem3uxAppInteractivePreview() {
     var uiState by remember { mutableStateOf(previewListState) }
+    val navController = rememberNavController()
+    val coroutineScope = rememberCoroutineScope()
+    val drawerState = rememberDrawerState(DrawerValue.Closed)
 
-    Dem3uxApp(
-        uiState = uiState,
-        versionLabel = PREVIEW_VERSION_LABEL,
-        onPlaylistClick = { playlistId ->
-            uiState = uiState.copy(selectedPlaylist = previewDetailsById[playlistId])
-        },
-        onBackClick = {
-            uiState = uiState.copy(selectedPlaylist = null)
-        },
-        onPlaylistRemoveClick = { playlistId ->
-            uiState =
-                uiState.copy(
-                    playlists = uiState.playlists.filterNot { playlist -> playlist.id == playlistId },
-                    selectedPlaylist = uiState.selectedPlaylist?.takeUnless { playlist -> playlist.id == playlistId },
-                )
-        },
-        onEntryClick = onEntryClick@{ playlistId, entryIndex ->
-            val selectedPlaylist = uiState.selectedPlaylist ?: return@onEntryClick
-            if (selectedPlaylist.id != playlistId) {
-                return@onEntryClick
+    Dem3uxTheme {
+        BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+            val useTwoPane = maxWidth >= 840.dp && maxHeight >= 600.dp
+            val currentRoute = navController.currentRoute()
+            val openDrawer: () -> Unit = { coroutineScope.launch { drawerState.open() } }
+
+            val navigateToRoute: (MainRoute) -> Unit = { route ->
+                navController.navigate(route) {
+                    popUpTo(navController.graph.findStartDestination().id) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+                coroutineScope.launch { drawerState.close() }
             }
 
-            val updatedEntries =
-                selectedPlaylist.entries.map { entry ->
-                    entry.copy(selected = entry.index == entryIndex)
-                }
-            val selectedEntryName = updatedEntries.firstOrNull { entry -> entry.selected }?.displayName
+            BackHandler(enabled = drawerState.isOpen) {
+                coroutineScope.launch { drawerState.close() }
+            }
 
-            uiState =
-                uiState.copy(
-                    playlists =
-                        uiState.playlists.map { playlist ->
-                            if (playlist.id == playlistId && selectedEntryName != null) {
-                                playlist.copy(selectedEntryName = selectedEntryName)
-                            } else {
-                                playlist
+            ModalNavigationDrawer(
+                drawerState = drawerState,
+                drawerContent = {
+                    Dem3uxDrawer(
+                        currentRoute = currentRoute,
+                        versionLabel = PREVIEW_VERSION_LABEL,
+                        onRouteClick = navigateToRoute,
+                    )
+                },
+            ) {
+                Scaffold(
+                    topBar = {
+                        val selectedPlaylist = uiState.selectedPlaylist
+                        when (currentRoute) {
+                            HelpRoute, SetupRoute -> {
+                                AppTopBar(
+                                    title = if (currentRoute == HelpRoute) "Help" else "Setup",
+                                    onMenuClick = openDrawer,
+                                )
                             }
-                        },
-                    selectedPlaylist = selectedPlaylist.copy(entries = updatedEntries),
-                )
-        },
-        onOpenPlaylistClick = {},
-        onEsDeFolderSelected = { _, _ -> },
-        onEsDePresetSelectedChange = { _, _ -> },
-        onSaveEsDeSetupClick = {},
-        onImportMessageShown = {},
-    )
+
+                            PlaylistsRoute -> {
+                                if (!useTwoPane && selectedPlaylist != null) {
+                                    PlaylistDetailTopBar(
+                                        title = selectedPlaylist.displayName,
+                                        subtitle = selectedPlaylist.sourcePath,
+                                        onBackClick = {
+                                            uiState = uiState.copy(selectedPlaylist = null)
+                                        },
+                                    )
+                                } else {
+                                    AppTopBar(
+                                        title = "dem3ux",
+                                        subtitle = if (useTwoPane) null else "Seen playlists",
+                                        onMenuClick = openDrawer,
+                                    )
+                                }
+                            }
+
+                            null -> {
+                                AppTopBar(title = "dem3ux", onMenuClick = openDrawer)
+                            }
+                        }
+                    },
+                    floatingActionButton = {
+                        if (currentRoute == PlaylistsRoute && uiState.selectedPlaylist == null) {
+                            FloatingActionButton(onClick = {}) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ic_open_file),
+                                    contentDescription = "Open m3u playlist",
+                                )
+                            }
+                        }
+                    },
+                ) { contentPadding ->
+                    Surface(modifier = Modifier.fillMaxSize()) {
+                        Column(
+                            modifier =
+                                Modifier
+                                    .fillMaxSize()
+                                    .padding(contentPadding)
+                                    .padding(16.dp),
+                        ) {
+                            NavHost(
+                                navController = navController,
+                                startDestination = PlaylistsRoute,
+                                enterTransition = { fadeIn(tween(FADE_MILLIS)) },
+                                exitTransition = { fadeOut(tween(FADE_MILLIS)) },
+                                popEnterTransition = { fadeIn(tween(FADE_MILLIS)) },
+                                popExitTransition = { fadeOut(tween(FADE_MILLIS)) },
+                            ) {
+                                composable<PlaylistsRoute> {
+                                    val selectedPlaylist = uiState.selectedPlaylist
+                                    BackHandler(enabled = !useTwoPane && selectedPlaylist != null) {
+                                        uiState = uiState.copy(selectedPlaylist = null)
+                                    }
+
+                                    val onEntryClick: (Long, Int) -> Unit = { playlistId, entryIndex ->
+                                        val sp = selectedPlaylist
+                                        if (sp != null && sp.id == playlistId) {
+                                            val updatedEntries =
+                                                sp.entries.map { entry -> entry.copy(selected = entry.index == entryIndex) }
+                                            val selectedEntryName =
+                                                updatedEntries.firstOrNull { entry -> entry.selected }?.displayName
+                                            uiState =
+                                                uiState.copy(
+                                                    playlists =
+                                                        uiState.playlists.map { playlist ->
+                                                            if (playlist.id == playlistId && selectedEntryName != null) {
+                                                                playlist.copy(selectedEntryName = selectedEntryName)
+                                                            } else {
+                                                                playlist
+                                                            }
+                                                        },
+                                                    selectedPlaylist = sp.copy(entries = updatedEntries),
+                                                )
+                                        }
+                                    }
+
+                                    if (useTwoPane) {
+                                        TwoPaneContent(
+                                            uiState = uiState,
+                                            onPlaylistClick = { playlistId ->
+                                                uiState = uiState.copy(selectedPlaylist = previewDetailsById[playlistId])
+                                            },
+                                            onPlaylistRemoveClick = { playlist ->
+                                                uiState =
+                                                    uiState.copy(
+                                                        playlists = uiState.playlists.filterNot { p -> p.id == playlist.id },
+                                                        selectedPlaylist =
+                                                            uiState.selectedPlaylist?.takeUnless { p ->
+                                                                p.id == playlist.id
+                                                            },
+                                                    )
+                                            },
+                                            onEntryClick = onEntryClick,
+                                            onOpenSetupGuideClick = {},
+                                            onOpenSetupClick = { navigateToRoute(SetupRoute) },
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                    } else {
+                                        AnimatedContent(
+                                            targetState = selectedPlaylist,
+                                            modifier = Modifier.weight(1f),
+                                            transitionSpec = { fadeIn(tween(FADE_MILLIS)) togetherWith fadeOut(tween(FADE_MILLIS)) },
+                                            contentKey = { playlist -> playlist?.id ?: -1L },
+                                            label = "previewPlaylistSinglePaneContent",
+                                        ) { playlist ->
+                                            if (playlist == null) {
+                                                PlaylistList(
+                                                    playlists = uiState.playlists,
+                                                    playlistsLoaded = true,
+                                                    onPlaylistClick = { playlistId ->
+                                                        uiState = uiState.copy(selectedPlaylist = previewDetailsById[playlistId])
+                                                    },
+                                                    onPlaylistRemoveClick = { item ->
+                                                        uiState =
+                                                            uiState.copy(
+                                                                playlists = uiState.playlists.filterNot { p -> p.id == item.id },
+                                                                selectedPlaylist =
+                                                                    uiState.selectedPlaylist?.takeUnless { p ->
+                                                                        p.id == item.id
+                                                                    },
+                                                            )
+                                                    },
+                                                    onOpenSetupGuideClick = {},
+                                                    onOpenSetupClick = { navigateToRoute(SetupRoute) },
+                                                    modifier = Modifier.fillMaxSize(),
+                                                )
+                                            } else {
+                                                PlaylistDetail(
+                                                    playlist = playlist,
+                                                    onEntryClick = onEntryClick,
+                                                    showTitle = false,
+                                                    modifier = Modifier.fillMaxSize(),
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                composable<SetupRoute> {
+                                    var previewSetupStep by rememberSaveable { mutableStateOf(SetupStep.Frontends) }
+                                    BackHandler(enabled = previewSetupStep != SetupStep.Frontends) {
+                                        previewSetupStep = SetupStep.Frontends
+                                    }
+                                    if (useTwoPane) {
+                                        SetupContent(
+                                            setupFrontends = previewSetupFrontends,
+                                            setupStep = previewSetupStep,
+                                            setupState = previewSetupState,
+                                            useTwoPane = true,
+                                            onFrontendClick = { frontendId ->
+                                                if (frontendId == SETUP_FRONTEND_ES_DE) {
+                                                    previewSetupStep = SetupStep.EsDe
+                                                }
+                                            },
+                                            onChooseEsDeFolderClick = {},
+                                            onPresetSelectedChange = { _, _ -> },
+                                            onSaveClick = {},
+                                            modifier = Modifier.weight(1f),
+                                        )
+                                    } else {
+                                        AnimatedContent(
+                                            targetState = previewSetupStep,
+                                            modifier = Modifier.weight(1f),
+                                            transitionSpec = { fadeIn(tween(FADE_MILLIS)) togetherWith fadeOut(tween(FADE_MILLIS)) },
+                                            label = "previewSetupSinglePaneContent",
+                                        ) { targetSetupStep ->
+                                            SetupContent(
+                                                setupFrontends = previewSetupFrontends,
+                                                setupStep = targetSetupStep,
+                                                setupState = previewSetupState,
+                                                useTwoPane = false,
+                                                onFrontendClick = { frontendId ->
+                                                    if (frontendId == SETUP_FRONTEND_ES_DE) {
+                                                        previewSetupStep = SetupStep.EsDe
+                                                    }
+                                                },
+                                                onChooseEsDeFolderClick = {},
+                                                onPresetSelectedChange = { _, _ -> },
+                                                onSaveClick = {},
+                                                modifier = Modifier.fillMaxSize(),
+                                            )
+                                        }
+                                    }
+                                }
+                                composable<HelpRoute> {
+                                    HelpContent(
+                                        onOpenSetupGuideClick = {},
+                                        onOpenSetupClick = { navigateToRoute(SetupRoute) },
+                                        modifier = Modifier.weight(1f),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
