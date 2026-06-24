@@ -12,9 +12,9 @@ interface EsDeSetupRepository {
 
     suspend fun persistedCustomSystemsFolder(): Uri?
 
-    fun readFindRules(treeUri: Uri): String?
+    suspend fun readFindRules(treeUri: Uri): String?
 
-    fun saveFindRules(
+    suspend fun saveFindRules(
         treeUri: Uri,
         content: String,
     )

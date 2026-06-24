@@ -299,9 +299,9 @@ private class FakeEsDeSetupRepository : EsDeSetupRepository {
 
     override suspend fun persistedCustomSystemsFolder(): Uri? = null
 
-    override fun readFindRules(treeUri: Uri): String? = null
+    override suspend fun readFindRules(treeUri: Uri): String? = null
 
-    override fun saveFindRules(
+    override suspend fun saveFindRules(
         treeUri: Uri,
         content: String,
     ) {

@@ -11,8 +11,10 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.documentfile.provider.DocumentFile
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import net.aitorciki.dem3ux.bridge.PresetBridge
 
 private val KEY_CUSTOM_SYSTEMS_URI = stringPreferencesKey("custom_systems_uri")
@@ -26,6 +28,7 @@ private val Context.esDeSetupDataStore by preferencesDataStore(
 
 class EsDeSetupRepositoryImpl(
     private val context: Context,
+    private val ioDispatcher: CoroutineDispatcher,
     private val logger: (String, Throwable?) -> Unit,
 ) : EsDeSetupRepository {
     override suspend fun persistCustomSystemsFolder(
@@ -56,21 +59,25 @@ class EsDeSetupRepositoryImpl(
         return parsed.takeIf { hasPersistedGrant }
     }
 
-    override fun readFindRules(treeUri: Uri): String? =
-        findRulesFile(treeUri)
-            ?.uri
-            ?.let { uri -> context.contentResolver.openInputStream(uri) }
-            ?.bufferedReader()
-            ?.use { reader -> reader.readText() }
+    override suspend fun readFindRules(treeUri: Uri): String? =
+        withContext(ioDispatcher) {
+            findRulesFile(treeUri)
+                ?.uri
+                ?.let { uri -> context.contentResolver.openInputStream(uri) }
+                ?.bufferedReader()
+                ?.use { reader -> reader.readText() }
+        }
 
-    override fun saveFindRules(
+    override suspend fun saveFindRules(
         treeUri: Uri,
         content: String,
     ) {
-        val file = findRulesFile(treeUri) ?: createRulesFile(treeUri)
-        requireNotNull(context.contentResolver.openOutputStream(file.uri, "wt")) { "Could not open es_find_rules.xml" }
-            .bufferedWriter()
-            .use { writer -> writer.write(content) }
+        withContext(ioDispatcher) {
+            val file = findRulesFile(treeUri) ?: createRulesFile(treeUri)
+            requireNotNull(context.contentResolver.openOutputStream(file.uri, "wt")) { "Could not open es_find_rules.xml" }
+                .bufferedWriter()
+                .use { writer -> writer.write(content) }
+        }
     }
 
     override fun installedPresetTarget(preset: PresetBridge): InstalledPresetTarget? {

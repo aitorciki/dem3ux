@@ -7,13 +7,11 @@ import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import net.aitorciki.dem3ux.R
 import net.aitorciki.dem3ux.bridge.PlaylistContentReader
 import net.aitorciki.dem3ux.bridge.PresetBridge
@@ -136,18 +134,16 @@ class Dem3uxViewModel(
     ) {
         viewModelScope.launch {
             val result =
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                        esDeSetupRepository.persistCustomSystemsFolder(uri = uri, grantFlags = grantFlags)
-                        val currentRules = esDeSetupRepository.readFindRules(uri)
-                        val selectedEmulatorNames =
-                            EsDeFindRulesEditor.selectedEmulatorNames(
-                                currentRules,
-                                esDeRuleSelections(selected = true),
-                            )
+                runCatching {
+                    esDeSetupRepository.persistCustomSystemsFolder(uri = uri, grantFlags = grantFlags)
+                    val currentRules = esDeSetupRepository.readFindRules(uri)
+                    val selectedEmulatorNames =
+                        EsDeFindRulesEditor.selectedEmulatorNames(
+                            currentRules,
+                            esDeRuleSelections(selected = true),
+                        )
 
-                        uri to selectedEmulatorNames.toPresetIds()
-                    }
+                    uri to selectedEmulatorNames.toPresetIds()
                 }
 
             result
@@ -165,18 +161,16 @@ class Dem3uxViewModel(
     private fun restoreEsDeSetupFolder() {
         viewModelScope.launch {
             val result =
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                        val uri = esDeSetupRepository.persistedCustomSystemsFolder() ?: return@runCatching null
-                        val currentRules = esDeSetupRepository.readFindRules(uri)
-                        val selectedEmulatorNames =
-                            EsDeFindRulesEditor.selectedEmulatorNames(
-                                currentRules,
-                                esDeRuleSelections(selected = true),
-                            )
+                runCatching {
+                    val uri = esDeSetupRepository.persistedCustomSystemsFolder() ?: return@runCatching null
+                    val currentRules = esDeSetupRepository.readFindRules(uri)
+                    val selectedEmulatorNames =
+                        EsDeFindRulesEditor.selectedEmulatorNames(
+                            currentRules,
+                            esDeRuleSelections(selected = true),
+                        )
 
-                        uri to selectedEmulatorNames.toPresetIds()
-                    }
+                    uri to selectedEmulatorNames.toPresetIds()
                 }
 
             result
@@ -213,16 +207,14 @@ class Dem3uxViewModel(
 
         viewModelScope.launch {
             val result =
-                withContext(Dispatchers.IO) {
-                    runCatching {
-                        val currentRules = esDeSetupRepository.readFindRules(folderUri)
-                        val updatedRules =
-                            EsDeFindRulesEditor.applySelections(
-                                inputXml = currentRules,
-                                selections = esDeRuleSelections(selectedPresetIds = selectedEsDePresetIds.value),
-                            )
-                        esDeSetupRepository.saveFindRules(treeUri = folderUri, content = updatedRules)
-                    }
+                runCatching {
+                    val currentRules = esDeSetupRepository.readFindRules(folderUri)
+                    val updatedRules =
+                        EsDeFindRulesEditor.applySelections(
+                            inputXml = currentRules,
+                            selections = esDeRuleSelections(selectedPresetIds = selectedEsDePresetIds.value),
+                        )
+                    esDeSetupRepository.saveFindRules(treeUri = folderUri, content = updatedRules)
                 }
 
             importMessage.value =

@@ -38,6 +38,7 @@ val appModule =
         single<EsDeSetupRepository> {
             EsDeSetupRepositoryImpl(
                 context = androidContext(),
+                ioDispatcher = get(),
                 logger = { message, error ->
                     if (error == null) Log.w(LOG_TAG, message) else Log.w(LOG_TAG, message, error)
                 },
