@@ -35,7 +35,14 @@ val appModule =
                 .build()
         }
         single<PlaylistRepository> { RoomPlaylistRepository(get()) }
-        single<EsDeSetupRepository> { EsDeSetupRepositoryImpl(androidContext()) }
+        single<EsDeSetupRepository> {
+            EsDeSetupRepositoryImpl(
+                context = androidContext(),
+                logger = { message, error ->
+                    if (error == null) Log.w(LOG_TAG, message) else Log.w(LOG_TAG, message, error)
+                },
+            )
+        }
         single<CoroutineDispatcher> { Dispatchers.IO }
         single<PersistedTreeUrisProvider> {
             PersistedTreeUrisProvider {

@@ -11,6 +11,7 @@ import net.aitorciki.dem3ux.bridge.PresetBridge
 
 class EsDeSetupRepositoryImpl(
     private val context: Context,
+    private val logger: (String, Throwable?) -> Unit,
 ) : EsDeSetupRepository {
     private val preferences = context.getSharedPreferences(PREFERENCES_NAME, Context.MODE_PRIVATE)
 
@@ -61,7 +62,7 @@ class EsDeSetupRepositoryImpl(
         val icon =
             runCatching {
                 packageManager.getActivityInfoCompat(component).loadIcon(packageManager).toBitmap(width = 48, height = 48)
-            }.getOrNull()
+            }.onFailure { error -> logger("Failed to load preset target icon", error) }.getOrNull()
 
         return InstalledPresetTarget(icon = icon)
     }
@@ -75,7 +76,7 @@ class EsDeSetupRepositoryImpl(
         val icon =
             runCatching {
                 packageManager.getApplicationIcon(ES_DE_PACKAGE_NAME).toBitmap(width = 48, height = 48)
-            }.getOrNull()
+            }.onFailure { error -> logger("Failed to load frontend icon", error) }.getOrNull()
 
         return InstalledFrontend(icon = icon)
     }
@@ -110,6 +111,7 @@ class EsDeSetupRepositoryImpl(
     }
 }
 
+// minSdk 26 precludes the API 33 ComponentInfoFlags/ApplicationInfoFlags overloads; keep the int-flags calls.
 @Suppress("DEPRECATION")
 private fun PackageManager.getActivityInfoCompat(component: android.content.ComponentName) = getActivityInfo(component, 0)
 
