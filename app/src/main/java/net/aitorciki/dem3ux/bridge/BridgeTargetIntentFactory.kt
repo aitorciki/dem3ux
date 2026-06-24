@@ -38,7 +38,7 @@ object BridgeTargetIntentFactory {
             embeddedExtraReplacement = embeddedExtraReplacement,
         )
 
-        if (selectedEntry.startsWith("content://")) {
+        if (GamePath.parse(selectedEntry) is GamePath.ContentUri) {
             targetIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             targetIntent.clipData = ClipData.newRawUri("dem3ux selected entry", selectedEntry.toUri())
         }

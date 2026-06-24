@@ -16,28 +16,28 @@ object PlaylistEntryResolver {
     ): List<M3uEntry> {
         val entryLines = entryLines(content)
 
-        return when {
-            sourcePath.startsWith("content://") -> {
+        return when (val sourceGamePath = GamePath.parse(sourcePath)) {
+            is GamePath.ContentUri -> {
                 entryLines.mapIndexed { index, line ->
                     M3uEntry(
                         index = index,
                         rawLine = line,
-                        resolvedPath = resolveContentUri(sourcePath, line),
+                        resolvedPath = resolveContentUri(sourceGamePath, line),
                     )
                 }
             }
 
-            sourcePath.startsWith("file://") -> {
+            is GamePath.FileUri -> {
                 entryLines.mapIndexed { index, line ->
                     M3uEntry(
                         index = index,
                         rawLine = line,
-                        resolvedPath = resolveFileUri(sourcePath, line),
+                        resolvedPath = resolveFileUri(sourceGamePath, line),
                     )
                 }
             }
 
-            else -> {
+            is GamePath.RawPath -> {
                 M3uParser.parse(sourcePath = sourcePath, content = content).entries
             }
         }
@@ -51,15 +51,14 @@ object PlaylistEntryResolver {
             .toList()
 
     private fun resolveFileUri(
-        sourcePath: String,
+        sourcePath: GamePath.FileUri,
         entryPath: String,
     ): String {
-        if (entryPath.startsWith("content://") || entryPath.startsWith("file://")) {
+        if (GamePath.parse(entryPath).isUri) {
             return entryPath
         }
 
-        val sourceUri = URI(sourcePath)
-        val sourceFile = File(requireNotNull(sourceUri.path) { "file URI path is required" })
+        val sourceFile = File(requireNotNull(sourcePath.uri.path) { "file URI path is required" })
         val resolvedPath =
             M3uParser
                 .parse(sourcePath = sourceFile.path, content = entryPath)
@@ -70,14 +69,14 @@ object PlaylistEntryResolver {
     }
 
     private fun resolveContentUri(
-        sourcePath: String,
+        sourcePath: GamePath.ContentUri,
         entryPath: String,
     ): String {
-        if (entryPath.startsWith("content://") || entryPath.startsWith("file://") || entryPath.startsWith("/")) {
+        if (GamePath.parse(entryPath).isUri || entryPath.startsWith("/")) {
             return entryPath
         }
 
-        val sourceUri = URI(sourcePath)
+        val sourceUri = sourcePath.uri
         if (sourceUri.authority == ES_DE_FILE_PROVIDER_AUTHORITY) {
             return resolveEsDeFileProviderUri(sourceUri, entryPath) ?: entryPath
         }
@@ -118,4 +117,7 @@ object PlaylistEntryResolver {
 
         return "content://$EXTERNAL_STORAGE_AUTHORITY/document/${PathCodec.encode(resolvedDocumentId)}"
     }
+
+    private val GamePath.isUri: Boolean
+        get() = this is GamePath.ContentUri || this is GamePath.FileUri
 }

@@ -17,26 +17,26 @@ class AndroidPlaylistContentReader(
         withContext(ioDispatcher) {
             val result =
                 runCatching {
-                    when {
-                        inputPath.startsWith("content://") -> {
-                            val readableInputPath = inputPath.mapThroughPersistedTreeGrant()
+                    when (val gamePath = GamePath.parse(inputPath)) {
+                        is GamePath.ContentUri -> {
+                            val readableInputPath = gamePath.raw.mapThroughPersistedTreeGrant()
                             context.contentResolver.openInputStream(readableInputPath.toUri())?.bufferedReader()?.use { reader ->
                                 reader.readText()
                             }
                         }
 
-                        inputPath.startsWith("file://") -> {
-                            File(requireNotNull(inputPath.toUri().path)).readText()
+                        is GamePath.FileUri -> {
+                            File(requireNotNull(gamePath.uri.path)).readText()
                         }
 
-                        else -> {
-                            val readableInputPath = inputPath.mapThroughPersistedTreeGrant()
-                            if (readableInputPath != inputPath) {
+                        is GamePath.RawPath -> {
+                            val readableInputPath = gamePath.raw.mapThroughPersistedTreeGrant()
+                            if (readableInputPath != gamePath.raw) {
                                 context.contentResolver.openInputStream(readableInputPath.toUri())?.bufferedReader()?.use { reader ->
                                     reader.readText()
                                 }
                             } else {
-                                File(inputPath).readText()
+                                File(gamePath.raw).readText()
                             }
                         }
                     }
