@@ -7,6 +7,7 @@ import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -72,7 +73,7 @@ internal fun EsDeSetupContent(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
+                        Row {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
                                     text = "ES-DE preset setup",
@@ -91,8 +92,13 @@ internal fun EsDeSetupContent(
                                 }
                             }
                             if (setupState.hasFolderAccess) {
-                                TextButton(onClick = { setupCardExpanded = !setupCardExpanded }) {
-                                    Text(if (setupCardExpanded) "Hide" else "Show")
+                                TrailingSelectionControl {
+                                    TextButton(
+                                        onClick = { setupCardExpanded = !setupCardExpanded },
+                                        contentPadding = PaddingValues(0.dp),
+                                    ) {
+                                        Text(if (setupCardExpanded) "Hide" else "Show")
+                                    }
                                 }
                             }
                         }
