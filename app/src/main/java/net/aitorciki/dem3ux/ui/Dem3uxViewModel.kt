@@ -2,6 +2,7 @@ package net.aitorciki.dem3ux.ui
 
 import android.app.Application
 import android.content.Intent
+import android.content.res.Resources
 import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.AndroidViewModel
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import net.aitorciki.dem3ux.R
 import net.aitorciki.dem3ux.bridge.PlaylistContentReader
 import net.aitorciki.dem3ux.bridge.PresetBridge
 import net.aitorciki.dem3ux.bridge.PresetBridges
@@ -28,6 +30,7 @@ class Dem3uxViewModel(
     private val esDeSetupRepository: EsDeSetupRepository,
     private val playlistContentReader: PlaylistContentReader,
 ) : AndroidViewModel(application) {
+    private val resources = application.resources
     private val selectedPlaylistId = MutableStateFlow<Long?>(null)
     private val importMessage = MutableStateFlow<String?>(null)
     private val esDeCustomSystemsUri = MutableStateFlow<Uri?>(null)
@@ -80,7 +83,7 @@ class Dem3uxViewModel(
             if (selectedPlaylistId.value == playlistId) {
                 selectedPlaylistId.value = null
             }
-            importMessage.value = "Playlist removed."
+            importMessage.value = resources.getString(R.string.playlist_removed)
         }
     }
 
@@ -115,10 +118,10 @@ class Dem3uxViewModel(
 
             val selection = result.getOrNull()
             if (selection == null) {
-                importMessage.value = "Could not import playlist."
+                importMessage.value = resources.getString(R.string.playlist_import_failed)
             } else {
                 selectedPlaylistId.value = selection.playlistId
-                importMessage.value = "Playlist added."
+                importMessage.value = resources.getString(R.string.playlist_added)
             }
         }
     }
@@ -151,10 +154,10 @@ class Dem3uxViewModel(
                 .onSuccess { (folderUri, selectedPresetIds) ->
                     esDeCustomSystemsUri.value = folderUri
                     selectedEsDePresetIds.value = selectedPresetIds
-                    importMessage.value = "ES-DE folder selected."
+                    importMessage.value = resources.getString(R.string.es_de_folder_selected)
                 }.onFailure { error ->
                     Log.w(TAG, "Could not open ES-DE custom_systems folder.", error)
-                    importMessage.value = "Could not open ES-DE custom_systems folder."
+                    importMessage.value = resources.getString(R.string.es_de_folder_open_failed)
                 }
         }
     }
@@ -204,7 +207,7 @@ class Dem3uxViewModel(
     fun saveEsDeSetup() {
         val folderUri = esDeCustomSystemsUri.value
         if (folderUri == null) {
-            importMessage.value = "Select the ES-DE custom_systems folder first."
+            importMessage.value = resources.getString(R.string.es_de_folder_required)
             return
         }
 
@@ -224,9 +227,9 @@ class Dem3uxViewModel(
 
             importMessage.value =
                 if (result.isSuccess) {
-                    "ES-DE setup saved."
+                    resources.getString(R.string.es_de_setup_saved)
                 } else {
-                    "Could not save ES-DE setup."
+                    resources.getString(R.string.es_de_setup_save_failed)
                 }
         }
     }
@@ -241,8 +244,12 @@ class Dem3uxViewModel(
             id = playlist.id,
             displayName = playlist.displayName,
             sourcePath = playlist.sourcePath,
-            selectedEntryName = selectedEntry?.displayName ?: "No entries",
-            lastSeenLabel = "Last accessed ${playlist.lastSeenAt.toRelativeLabel()}",
+            selectedEntryName = selectedEntry?.displayName ?: resources.getString(R.string.no_entries),
+            lastSeenLabel =
+                resources.getString(
+                    R.string.playlist_last_accessed,
+                    playlist.lastSeenAt.toRelativeLabel(resources),
+                ),
         )
     }
 
@@ -285,8 +292,8 @@ class Dem3uxViewModel(
         return listOf(
             SetupFrontendUi(
                 id = SETUP_FRONTEND_ES_DE,
-                displayName = "ES-DE",
-                description = "Configure supported emulator presets",
+                displayName = resources.getString(R.string.frontend_es_de_name),
+                description = resources.getString(R.string.frontend_es_de_description),
                 installed = installedFrontend != null,
                 installedIcon = installedFrontend?.icon,
             ),
@@ -328,20 +335,52 @@ class Dem3uxViewModel(
     private fun esDePresets(): List<PresetBridge> = PresetBridges.all.filter { preset -> preset.esDeEmulatorName != null }
 }
 
-private fun Long.toRelativeLabel(): String {
+private fun Long.toRelativeLabel(resources: Resources): String {
     val elapsedMillis = (System.currentTimeMillis() - this).coerceAtLeast(0)
     val elapsedMinutes = elapsedMillis / 60_000
     val elapsedHours = elapsedMinutes / 60
     val elapsedDays = elapsedHours / 24
 
     return when {
-        elapsedMinutes < 1 -> "just now"
-        elapsedMinutes == 1L -> "1 minute ago"
-        elapsedMinutes < 60 -> "$elapsedMinutes minutes ago"
-        elapsedHours == 1L -> "1 hour ago"
-        elapsedHours < 24 -> "$elapsedHours hours ago"
-        elapsedDays == 1L -> "yesterday"
-        else -> "$elapsedDays days ago"
+        elapsedMinutes < 1 -> {
+            resources.getString(R.string.relative_just_now)
+        }
+
+        elapsedMinutes == 1L -> {
+            resources.getString(R.string.relative_one_minute_ago)
+        }
+
+        elapsedMinutes < 60 -> {
+            resources.getQuantityString(
+                R.plurals.relative_minutes_ago,
+                elapsedMinutes.toInt(),
+                elapsedMinutes.toInt(),
+            )
+        }
+
+        elapsedHours == 1L -> {
+            resources.getString(R.string.relative_one_hour_ago)
+        }
+
+        elapsedHours < 24 -> {
+            resources.getQuantityString(
+                R.plurals.relative_hours_ago,
+                elapsedHours.toInt(),
+                elapsedHours.toInt(),
+            )
+        }
+
+        elapsedDays == 1L -> {
+            resources.getString(R.string.relative_yesterday)
+        }
+
+        else -> {
+            resources.getQuantityString(
+                R.plurals.relative_days_ago,
+                elapsedDays.toInt(),
+                elapsedDays.toInt(),
+            )
+        }
     }
 }
 

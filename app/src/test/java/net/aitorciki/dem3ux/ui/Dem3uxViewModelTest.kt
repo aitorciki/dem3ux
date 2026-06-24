@@ -13,6 +13,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import net.aitorciki.dem3ux.R
 import net.aitorciki.dem3ux.bridge.PlaylistContentReader
 import net.aitorciki.dem3ux.bridge.PlaylistContentResult
 import net.aitorciki.dem3ux.bridge.PresetBridge
@@ -33,16 +34,15 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE)
 class Dem3uxViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var fakePlaylistRepository: FakePlaylistRepository
     private lateinit var fakeEsDeSetupRepository: FakeEsDeSetupRepository
     private lateinit var fakePlaylistContentReader: FakePlaylistContentReader
+    private lateinit var application: Application
     private lateinit var viewModel: Dem3uxViewModel
 
     @Before
@@ -51,7 +51,7 @@ class Dem3uxViewModelTest {
         fakePlaylistRepository = FakePlaylistRepository()
         fakeEsDeSetupRepository = FakeEsDeSetupRepository()
         fakePlaylistContentReader = FakePlaylistContentReader()
-        val application = ApplicationProvider.getApplicationContext<Application>()
+        application = ApplicationProvider.getApplicationContext()
         viewModel =
             Dem3uxViewModel(
                 application,
@@ -175,7 +175,7 @@ class Dem3uxViewModelTest {
                 viewModel.uiState.value.selectedPlaylist
                     ?.id,
             )
-            assertEquals("Playlist added.", viewModel.uiState.value.importMessage)
+            assertEquals(application.getString(R.string.playlist_added), viewModel.uiState.value.importMessage)
 
             collectJob.cancel()
         }
@@ -192,7 +192,7 @@ class Dem3uxViewModelTest {
             advanceUntilIdle()
 
             assertTrue(fakePlaylistRepository.recordSeenPlaylistCalls.isEmpty())
-            assertEquals("Could not import playlist.", viewModel.uiState.value.importMessage)
+            assertEquals(application.getString(R.string.playlist_import_failed), viewModel.uiState.value.importMessage)
 
             collectJob.cancel()
         }
@@ -209,7 +209,7 @@ class Dem3uxViewModelTest {
             advanceUntilIdle()
 
             assertTrue(fakePlaylistRepository.recordSeenPlaylistCalls.isEmpty())
-            assertEquals("Could not import playlist.", viewModel.uiState.value.importMessage)
+            assertEquals(application.getString(R.string.playlist_import_failed), viewModel.uiState.value.importMessage)
 
             collectJob.cancel()
         }

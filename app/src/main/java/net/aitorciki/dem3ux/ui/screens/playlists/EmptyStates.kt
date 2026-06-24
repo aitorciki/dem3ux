@@ -12,8 +12,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import net.aitorciki.dem3ux.R
 import net.aitorciki.dem3ux.ui.components.SetupGuideText
 
 @Composable
@@ -27,7 +29,7 @@ internal fun EmptyPlaylistList(
     ) {
         Column(modifier = Modifier.padding(18.dp)) {
             Text(
-                text = "No playlists yet",
+                text = stringResource(R.string.no_playlists_yet),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -44,13 +46,13 @@ internal fun EmptyPlaylistList(
 internal fun EmptyDetail(modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize()) {
         Text(
-            text = "Select a playlist",
+            text = stringResource(R.string.select_playlist),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Entries will appear here with the current default marked.",
+            text = stringResource(R.string.empty_playlist_detail),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

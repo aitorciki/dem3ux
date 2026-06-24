@@ -42,6 +42,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -103,13 +104,13 @@ internal fun PlaylistList(
                         },
                         expanded = false,
                         onExpandedChange = {},
-                        placeholder = { Text("Search playlists") },
+                        placeholder = { Text(stringResource(R.string.search_playlists)) },
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
                                 IconButton(onClick = { searchQuery = "" }) {
                                     Icon(
                                         painter = painterResource(id = R.drawable.ic_close),
-                                        contentDescription = "Clear search",
+                                        contentDescription = stringResource(R.string.clear_search_cd),
                                     )
                                 }
                             }
@@ -133,7 +134,7 @@ internal fun PlaylistList(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = "No playlists match your search.",
+                                text = stringResource(R.string.no_playlists_match_search),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -211,7 +212,7 @@ private fun PlaylistCard(
                         ) {
                             Icon(
                                 painter = painterResource(id = R.drawable.ic_more_vert),
-                                contentDescription = "Playlist options",
+                                contentDescription = stringResource(R.string.playlist_options_cd),
                                 modifier = Modifier.size(20.dp),
                             )
                         }
@@ -222,7 +223,7 @@ private fun PlaylistCard(
                         shape = RoundedCornerShape(DropdownMenuCorner),
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Delete") },
+                            text = { Text(stringResource(R.string.action_delete)) },
                             onClick = {
                                 menuExpanded = false
                                 onRemoveClick()
@@ -248,7 +249,7 @@ private fun PlaylistCard(
             )
             Spacer(modifier = Modifier.height(10.dp))
             Text(
-                text = "Selected: ${playlist.selectedEntryName}",
+                text = stringResource(R.string.selected_entry_label, playlist.selectedEntryName),
                 style = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

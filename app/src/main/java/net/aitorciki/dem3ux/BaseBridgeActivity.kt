@@ -100,7 +100,7 @@ abstract class BaseBridgeActivity :
             Toast
                 .makeText(
                     this,
-                    "dem3ux still cannot access this game. Select the ROMs folder that contains it.",
+                    getString(R.string.bridge_still_cannot_access_game),
                     Toast.LENGTH_LONG,
                 ).show()
             finish()
@@ -108,7 +108,7 @@ abstract class BaseBridgeActivity :
         }
 
         pendingBridgeLaunch = bridgeLaunch.copy(requestedFolderAccess = true)
-        Toast.makeText(this, "Select the ROMs folder so dem3ux can access this game.", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, getString(R.string.bridge_select_roms_folder), Toast.LENGTH_LONG).show()
         openTreeLauncher.launch(null)
     }
 

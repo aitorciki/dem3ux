@@ -6,6 +6,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.LinkAnnotation
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextLinkStyles
@@ -13,14 +14,22 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
+import net.aitorciki.dem3ux.R
 
 @Composable
 internal fun SetupGuideText(
     onOpenSetupGuideClick: () -> Unit,
     onOpenSetupClick: () -> Unit,
 ) {
+    val supportedPrefix = stringResource(R.string.setup_guide_supported_prefix)
+    val setupLink = stringResource(R.string.setup_guide_setup_link)
+    val supportedSuffix = stringResource(R.string.setup_guide_supported_suffix)
+    val manualPrefix = stringResource(R.string.setup_guide_manual_prefix)
+    val integrationGuideLink = stringResource(R.string.setup_guide_integration_link)
+    val manualSuffix = stringResource(R.string.setup_guide_manual_suffix)
+
     Text(
-        text = "dem3ux is a bridge and must be configured in your emulator frontend:",
+        text = stringResource(R.string.setup_guide_intro),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
@@ -28,7 +37,7 @@ internal fun SetupGuideText(
     Text(
         text =
             buildAnnotatedString {
-                append("● If your frontend is supported, you can configure it directly from the ")
+                append(supportedPrefix)
                 withLink(
                     LinkAnnotation.Clickable(
                         tag = "setup",
@@ -43,9 +52,9 @@ internal fun SetupGuideText(
                         linkInteractionListener = { onOpenSetupClick() },
                     ),
                 ) {
-                    append("Setup")
+                    append(setupLink)
                 }
-                append(" section.")
+                append(supportedSuffix)
             },
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -54,7 +63,7 @@ internal fun SetupGuideText(
     Text(
         text =
             buildAnnotatedString {
-                append("● Otherwise, configure the frontend manually following the ")
+                append(manualPrefix)
                 withLink(
                     LinkAnnotation.Clickable(
                         tag = "guide",
@@ -69,16 +78,16 @@ internal fun SetupGuideText(
                         linkInteractionListener = { onOpenSetupGuideClick() },
                     ),
                 ) {
-                    append("Integration Guide")
+                    append(integrationGuideLink)
                 }
-                append(".")
+                append(manualSuffix)
             },
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Spacer(modifier = Modifier.height(8.dp))
     Text(
-        text = "Playlists seen by dem3ux will appear here when first accessed from your frontend.",
+        text = stringResource(R.string.setup_guide_empty_playlist_note),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )

@@ -23,10 +23,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import net.aitorciki.dem3ux.R
 import net.aitorciki.dem3ux.ui.PlaylistDetailUi
 import net.aitorciki.dem3ux.ui.PlaylistEntryUi
 import net.aitorciki.dem3ux.ui.components.TrailingSelectionControl
@@ -61,7 +63,7 @@ internal fun PlaylistDetail(
             Spacer(modifier = Modifier.height(20.dp))
         }
         Text(
-            text = "Tap an entry to make it the default for the next bridge launch.",
+            text = stringResource(R.string.playlist_detail_hint),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

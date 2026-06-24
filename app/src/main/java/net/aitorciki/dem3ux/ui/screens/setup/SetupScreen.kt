@@ -28,10 +28,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import net.aitorciki.dem3ux.R
 import net.aitorciki.dem3ux.ui.EsDeSetupUiState
 import net.aitorciki.dem3ux.ui.SETUP_FRONTEND_ES_DE
 import net.aitorciki.dem3ux.ui.SetupFrontendUi
@@ -146,7 +148,7 @@ internal fun SetupFrontendListContent(
     ) {
         item {
             Text(
-                text = "Choose a supported frontend to configure.",
+                text = stringResource(R.string.choose_supported_frontend),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -231,13 +233,13 @@ private fun SetupFrontendRow(
 internal fun EmptySetupDetail(modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxSize()) {
         Text(
-            text = "Select a frontend",
+            text = stringResource(R.string.select_frontend),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "Frontend-specific emulator configuration will appear here.",
+            text = stringResource(R.string.empty_setup_detail),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -91,7 +92,7 @@ fun Dem3uxApp() {
 
     Dem3uxApp(
         uiState = uiState,
-        versionLabel = "Version ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+        versionLabel = stringResource(R.string.version_label, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
         onPlaylistClick = viewModel::selectPlaylist,
         onBackClick = viewModel::clearSelectedPlaylist,
         onPlaylistRemoveClick = viewModel::deletePlaylist,
@@ -180,10 +181,10 @@ private fun Dem3uxApp(
             if (playlistPendingRemoval != null) {
                 AlertDialog(
                     onDismissRequest = { playlistPendingRemovalId = null },
-                    title = { Text("Remove playlist?") },
+                    title = { Text(stringResource(R.string.remove_playlist_title)) },
                     text = {
                         Text(
-                            "Remove ${playlistPendingRemoval.displayName} from dem3ux? This does not delete the .m3u or game files.",
+                            stringResource(R.string.remove_playlist_message, playlistPendingRemoval.displayName),
                         )
                     },
                     confirmButton = {
@@ -193,12 +194,12 @@ private fun Dem3uxApp(
                                 playlistPendingRemovalId = null
                             },
                         ) {
-                            Text("Remove")
+                            Text(stringResource(R.string.action_remove))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { playlistPendingRemovalId = null }) {
-                            Text("Cancel")
+                            Text(stringResource(R.string.action_cancel))
                         }
                     },
                 )
@@ -219,7 +220,12 @@ private fun Dem3uxApp(
                         when (currentRoute) {
                             HelpRoute, SetupRoute -> {
                                 AppTopBar(
-                                    title = if (currentRoute == HelpRoute) "Help" else "Setup",
+                                    title =
+                                        if (currentRoute == HelpRoute) {
+                                            stringResource(R.string.destination_help)
+                                        } else {
+                                            stringResource(R.string.destination_setup)
+                                        },
                                     onMenuClick = openDrawer,
                                 )
                             }
@@ -233,8 +239,8 @@ private fun Dem3uxApp(
                                     )
                                 } else {
                                     AppTopBar(
-                                        title = "dem3ux",
-                                        subtitle = if (useTwoPane) null else "Seen playlists",
+                                        title = stringResource(R.string.app_name),
+                                        subtitle = if (useTwoPane) null else stringResource(R.string.playlist_subtitle_seen),
                                         onMenuClick = openDrawer,
                                     )
                                 }
@@ -242,7 +248,7 @@ private fun Dem3uxApp(
 
                             null -> {
                                 AppTopBar(
-                                    title = "dem3ux",
+                                    title = stringResource(R.string.app_name),
                                     onMenuClick = openDrawer,
                                 )
                             }
@@ -254,7 +260,7 @@ private fun Dem3uxApp(
                             FloatingActionButton(onClick = { openDocumentLauncher.launch(arrayOf("*/*")) }) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_open_file),
-                                    contentDescription = "Open m3u playlist",
+                                    contentDescription = stringResource(R.string.open_m3u_playlist_cd),
                                 )
                             }
                         }
@@ -402,25 +408,25 @@ private fun Dem3uxDrawer(
     ModalDrawerSheet {
         Column(modifier = Modifier.fillMaxHeight()) {
             Text(
-                text = "dem3ux",
+                text = stringResource(R.string.app_name),
                 modifier = Modifier.padding(28.dp, 24.dp, 28.dp, 12.dp),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.SemiBold,
             )
             NavigationDrawerItem(
-                label = { Text("Playlists") },
+                label = { Text(stringResource(R.string.destination_playlists)) },
                 selected = currentRoute == PlaylistsRoute,
                 onClick = { onRouteClick(PlaylistsRoute) },
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
             NavigationDrawerItem(
-                label = { Text("Setup") },
+                label = { Text(stringResource(R.string.destination_setup)) },
                 selected = currentRoute == SetupRoute,
                 onClick = { onRouteClick(SetupRoute) },
                 modifier = Modifier.padding(horizontal = 12.dp),
             )
             NavigationDrawerItem(
-                label = { Text("Help") },
+                label = { Text(stringResource(R.string.destination_help)) },
                 selected = currentRoute == HelpRoute,
                 onClick = { onRouteClick(HelpRoute) },
                 modifier = Modifier.padding(horizontal = 12.dp),
@@ -494,7 +500,12 @@ private fun Dem3uxAppInteractivePreview() {
                         when (currentRoute) {
                             HelpRoute, SetupRoute -> {
                                 AppTopBar(
-                                    title = if (currentRoute == HelpRoute) "Help" else "Setup",
+                                    title =
+                                        if (currentRoute == HelpRoute) {
+                                            stringResource(R.string.destination_help)
+                                        } else {
+                                            stringResource(R.string.destination_setup)
+                                        },
                                     onMenuClick = openDrawer,
                                 )
                             }
@@ -510,15 +521,15 @@ private fun Dem3uxAppInteractivePreview() {
                                     )
                                 } else {
                                     AppTopBar(
-                                        title = "dem3ux",
-                                        subtitle = if (useTwoPane) null else "Seen playlists",
+                                        title = stringResource(R.string.app_name),
+                                        subtitle = if (useTwoPane) null else stringResource(R.string.playlist_subtitle_seen),
                                         onMenuClick = openDrawer,
                                     )
                                 }
                             }
 
                             null -> {
-                                AppTopBar(title = "dem3ux", onMenuClick = openDrawer)
+                                AppTopBar(title = stringResource(R.string.app_name), onMenuClick = openDrawer)
                             }
                         }
                     },
@@ -527,7 +538,7 @@ private fun Dem3uxAppInteractivePreview() {
                             FloatingActionButton(onClick = {}) {
                                 Icon(
                                     painter = painterResource(id = R.drawable.ic_open_file),
-                                    contentDescription = "Open m3u playlist",
+                                    contentDescription = stringResource(R.string.open_m3u_playlist_cd),
                                 )
                             }
                         }

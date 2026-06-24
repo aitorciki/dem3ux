@@ -12,9 +12,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import net.aitorciki.dem3ux.R
 import net.aitorciki.dem3ux.ui.components.SetupGuideText
 import net.aitorciki.dem3ux.ui.preview.PreviewScreenFrame
 import net.aitorciki.dem3ux.ui.theme.Dem3uxTheme
@@ -27,7 +29,7 @@ internal fun HelpContent(
 ) {
     Column(modifier = modifier.fillMaxSize()) {
         Text(
-            text = "Setup guide",
+            text = stringResource(R.string.setup_guide_title),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
         )

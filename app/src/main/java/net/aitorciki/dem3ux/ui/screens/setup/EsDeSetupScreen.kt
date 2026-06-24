@@ -35,10 +35,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import net.aitorciki.dem3ux.R
 import net.aitorciki.dem3ux.ui.EsDeSetupPresetUi
 import net.aitorciki.dem3ux.ui.EsDeSetupUiState
 import net.aitorciki.dem3ux.ui.components.TrailingSelectionControl
@@ -76,7 +78,7 @@ internal fun EsDeSetupContent(
                         Row {
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "ES-DE preset setup",
+                                    text = stringResource(R.string.es_de_preset_setup_title),
                                     style = MaterialTheme.typography.titleMedium,
                                     fontWeight = FontWeight.SemiBold,
                                 )
@@ -97,7 +99,13 @@ internal fun EsDeSetupContent(
                                         onClick = { setupCardExpanded = !setupCardExpanded },
                                         contentPadding = PaddingValues(0.dp),
                                     ) {
-                                        Text(if (setupCardExpanded) "Hide" else "Show")
+                                        Text(
+                                            if (setupCardExpanded) {
+                                                stringResource(R.string.action_hide)
+                                            } else {
+                                                stringResource(R.string.action_show)
+                                            },
+                                        )
                                     }
                                 }
                             }
@@ -105,13 +113,13 @@ internal fun EsDeSetupContent(
                         if (setupCardExpanded) {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = "Select ES-DE's custom_systems folder, then choose which installed emulators dem3ux should wrap.",
+                                text = stringResource(R.string.es_de_folder_instructions),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(modifier = Modifier.height(12.dp))
                             Button(onClick = onChooseEsDeFolderClick) {
-                                Text("Select custom_systems folder")
+                                Text(stringResource(R.string.select_custom_systems_folder))
                             }
                         }
                         if (setupCardExpanded && setupState.customSystemsUri != null) {
@@ -133,7 +141,7 @@ internal fun EsDeSetupContent(
             if (installedPresets.isEmpty()) {
                 item {
                     Text(
-                        text = "No supported emulator targets were detected. Install a supported emulator, then reopen this screen.",
+                        text = stringResource(R.string.no_supported_targets),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -164,7 +172,7 @@ internal fun EsDeSetupContent(
             enabled = setupState.hasFolderAccess,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Text("Save ES-DE setup")
+            Text(stringResource(R.string.save_es_de_setup))
         }
     }
 }
@@ -233,7 +241,7 @@ private fun EsDePresetRow(
 @Preview(showBackground = true, name = "ES-DE setup")
 @Composable
 private fun EsDeSetupContentPreview() {
-    PreviewDestinationFrame(title = "Setup") {
+    PreviewDestinationFrame(title = stringResource(R.string.destination_setup)) {
         EsDeSetupContent(
             setupState = previewSetupState,
             onChooseEsDeFolderClick = {},

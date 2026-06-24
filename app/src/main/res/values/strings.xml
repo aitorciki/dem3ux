@@ -1,0 +1,80 @@
+<resources>
+    <string name="app_name" translatable="false">dem3ux</string>
+    <string name="version_label">Version %1$s (%2$d)</string>
+
+    <string name="destination_playlists">Playlists</string>
+    <string name="destination_setup">Setup</string>
+    <string name="destination_help">Help</string>
+    <string name="playlist_subtitle_seen">Seen playlists</string>
+
+    <string name="remove_playlist_title">Remove playlist?</string>
+    <string name="remove_playlist_message">Remove %1$s from dem3ux? This does not delete the .m3u or game files.</string>
+    <string name="action_remove">Remove</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_delete">Delete</string>
+    <string name="action_show">Show</string>
+    <string name="action_hide">Hide</string>
+
+    <string name="open_m3u_playlist_cd">Open m3u playlist</string>
+    <string name="search_playlists">Search playlists</string>
+    <string name="clear_search_cd">Clear search</string>
+    <string name="playlist_options_cd">Playlist options</string>
+    <string name="no_playlists_match_search">No playlists match your search.</string>
+    <string name="selected_entry_label">Selected: %1$s</string>
+    <string name="no_playlists_yet">No playlists yet</string>
+    <string name="select_playlist">Select a playlist</string>
+    <string name="empty_playlist_detail">Entries will appear here with the current default marked.</string>
+    <string name="playlist_detail_hint">Tap an entry to make it the default for the next bridge launch.</string>
+    <string name="no_entries">No entries</string>
+    <string name="playlist_last_accessed">Last accessed %1$s</string>
+
+    <string name="setup_guide_title">Setup guide</string>
+    <string name="setup_guide_intro">dem3ux is a bridge and must be configured in your emulator frontend:</string>
+    <string name="setup_guide_supported_prefix">"• If your frontend is supported, you can configure it directly from the "</string>
+    <string name="setup_guide_setup_link">Setup</string>
+    <string name="setup_guide_supported_suffix">" section."</string>
+    <string name="setup_guide_manual_prefix">"• Otherwise, configure the frontend manually following the "</string>
+    <string name="setup_guide_integration_link">Integration Guide</string>
+    <string name="setup_guide_manual_suffix">.</string>
+    <string name="setup_guide_empty_playlist_note">Playlists seen by dem3ux will appear here when first accessed from your frontend.</string>
+    <string name="choose_supported_frontend">Choose a supported frontend to configure.</string>
+    <string name="select_frontend">Select a frontend</string>
+    <string name="empty_setup_detail">Frontend-specific emulator configuration will appear here.</string>
+    <string name="frontend_es_de_name" translatable="false">ES-DE</string>
+    <string name="frontend_es_de_description">Configure supported emulator presets</string>
+
+    <string name="es_de_preset_setup_title">ES-DE preset setup</string>
+    <string name="es_de_folder_instructions">Select ES-DE\'s custom_systems folder, then choose which installed emulators dem3ux should wrap.</string>
+    <string name="select_custom_systems_folder">Select custom_systems folder</string>
+    <string name="no_supported_targets">No supported emulator targets were detected. Install a supported emulator, then reopen this screen.</string>
+    <string name="save_es_de_setup">Save ES-DE setup</string>
+
+    <string name="navigate_back_cd">Back</string>
+    <string name="open_navigation_drawer_cd">Open navigation drawer</string>
+
+    <string name="playlist_removed">Playlist removed.</string>
+    <string name="playlist_added">Playlist added.</string>
+    <string name="playlist_import_failed">Could not import playlist.</string>
+    <string name="es_de_folder_selected">ES-DE folder selected.</string>
+    <string name="es_de_folder_open_failed">Could not open ES-DE custom_systems folder.</string>
+    <string name="es_de_folder_required">Select the ES-DE custom_systems folder first.</string>
+    <string name="es_de_setup_saved">ES-DE setup saved.</string>
+    <string name="es_de_setup_save_failed">Could not save ES-DE setup.</string>
+    <string name="bridge_select_roms_folder">Select the ROMs folder so dem3ux can access this game.</string>
+    <string name="bridge_still_cannot_access_game">dem3ux still cannot access this game. Select the ROMs folder that contains it.</string>
+
+    <string name="relative_just_now">just now</string>
+    <string name="relative_one_minute_ago">1 minute ago</string>
+    <string name="relative_one_hour_ago">1 hour ago</string>
+    <string name="relative_yesterday">yesterday</string>
+
+    <plurals name="relative_minutes_ago">
+        <item quantity="other">%d minutes ago</item>
+    </plurals>
+    <plurals name="relative_hours_ago">
+        <item quantity="other">%d hours ago</item>
+    </plurals>
+    <plurals name="relative_days_ago">
+        <item quantity="other">%d days ago</item>
+    </plurals>
+</resources>
