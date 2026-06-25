@@ -11,8 +11,8 @@ object BridgeTargetIntentFactory {
         sourceIntent: Intent,
         targetComponent: ComponentName,
         targetAction: String? = null,
-        inputPath: String,
-        selectedEntry: String,
+        inputPath: BridgeInputPath,
+        selectedEntry: SelectedEntryPath,
         embeddedExtraReplacement: EmbeddedExtraPattern? = null,
     ): Intent {
         val targetIntent =
@@ -20,8 +20,8 @@ object BridgeTargetIntentFactory {
                 component = targetComponent
                 data =
                     sourceIntent.data?.let { data ->
-                        if (data.toString() == inputPath) {
-                            selectedEntry.toUri()
+                        if (data.toString() == inputPath.raw) {
+                            selectedEntry.raw.toUri()
                         } else {
                             data
                         }
@@ -38,9 +38,9 @@ object BridgeTargetIntentFactory {
             embeddedExtraReplacement = embeddedExtraReplacement,
         )
 
-        if (GamePath.parse(selectedEntry) is GamePath.ContentUri) {
+        if (selectedEntry.isContentUri) {
             targetIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            targetIntent.clipData = ClipData.newRawUri("dem3ux selected entry", selectedEntry.toUri())
+            targetIntent.clipData = ClipData.newRawUri("dem3ux selected entry", selectedEntry.raw.toUri())
         }
 
         return targetIntent
@@ -49,8 +49,8 @@ object BridgeTargetIntentFactory {
     private fun forwardExtras(
         sourceIntent: Intent,
         targetIntent: Intent,
-        inputPath: String,
-        selectedEntry: String,
+        inputPath: BridgeInputPath,
+        selectedEntry: SelectedEntryPath,
         embeddedExtraReplacement: EmbeddedExtraPattern?,
     ) {
         val sourceExtras = sourceIntent.extras ?: return
@@ -67,8 +67,8 @@ object BridgeTargetIntentFactory {
                     val replacement =
                         if (embeddedExtraReplacement?.key == key) {
                             embeddedExtraReplacement.replaceInputPath(extraValue = value, selectedEntry = selectedEntry)
-                        } else if (value == inputPath) {
-                            selectedEntry
+                        } else if (value == inputPath.raw) {
+                            selectedEntry.raw
                         } else {
                             value
                         }
@@ -78,11 +78,11 @@ object BridgeTargetIntentFactory {
                 }
 
                 is Array<*> -> {
-                    if (value.all { it is String } && value.any { it == inputPath }) {
+                    if (value.all { it is String } && value.any { it == inputPath.raw }) {
                         @Suppress("UNCHECKED_CAST")
                         forwardedBundle.putStringArray(
                             key,
-                            (value as Array<String>).map { v -> if (v == inputPath) selectedEntry else v }.toTypedArray(),
+                            (value as Array<String>).map { v -> if (v == inputPath.raw) selectedEntry.raw else v }.toTypedArray(),
                         )
                     }
                 }

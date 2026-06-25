@@ -30,3 +30,37 @@ internal sealed interface GamePath {
         }
     }
 }
+
+@JvmInline
+value class BridgeInputPath(
+    val raw: String,
+) {
+    fun isPlaylist(): Boolean = BridgeInputType.isPlaylist(raw)
+}
+
+@JvmInline
+value class SelectedEntryPath(
+    val raw: String,
+) {
+    val isContentUri: Boolean
+        get() = GamePath.parse(raw) is GamePath.ContentUri
+
+    fun requiresFolderAccessForForwarding(persistedTreeUris: List<String>): Boolean =
+        ExternalStorageUriMapper.documentId(raw) != null &&
+            !ExternalStorageUriMapper.hasPersistedTreeGrant(
+                uriString = raw,
+                persistedTreeUris = persistedTreeUris,
+            )
+
+    fun mapContentUriThroughPersistedTreeGrant(persistedTreeUris: List<String>): SelectedEntryPath =
+        if (ExternalStorageUriMapper.documentId(raw) != null) {
+            SelectedEntryPath(
+                ExternalStorageUriMapper.mapToPersistedTreeUri(
+                    uriString = raw,
+                    persistedTreeUris = persistedTreeUris,
+                ) ?: raw,
+            )
+        } else {
+            this
+        }
+}

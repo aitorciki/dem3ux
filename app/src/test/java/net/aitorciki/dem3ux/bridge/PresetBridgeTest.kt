@@ -53,8 +53,8 @@ class PresetBridgeTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = requireNotNull(PresetBridges.duckStation.targetComponent),
-                inputPath = inputPath,
-                selectedEntry = selectedEntry,
+                inputPath = BridgeInputPath(inputPath),
+                selectedEntry = SelectedEntryPath(selectedEntry),
             )
 
         assertNull(targetIntent.action)
@@ -142,7 +142,7 @@ class PresetBridgeTest {
         val inputPath = "/storage/emulated/0/roms/cpc/Game Disk.m3u"
         val sourceIntent = Intent().putExtra("cli_params", "-rompath '/roms;cpc' -flop1 '$inputPath'")
 
-        assertEquals(inputPath, preset.inputFrom(sourceIntent)?.inputPath)
+        assertEquals(inputPath, preset.inputFrom(sourceIntent)?.inputPath?.raw)
     }
 
     @Test
@@ -151,7 +151,7 @@ class PresetBridgeTest {
         val inputPath = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fcpc%2FGame.m3u"
         val sourceIntent = Intent().putExtra("cli_params", "-rompath '/roms;cpc' -flop1 '$inputPath'")
 
-        assertEquals(inputPath, preset.inputFrom(sourceIntent)?.inputPath)
+        assertEquals(inputPath, preset.inputFrom(sourceIntent)?.inputPath?.raw)
     }
 
     @Test
@@ -160,7 +160,7 @@ class PresetBridgeTest {
         val inputPath = "content://org.es_de.frontend.files/external/Documents/roms/cpc/Game.m3u"
         val sourceIntent = Intent().putExtra("cli_params", "-rompath '/roms;cpc' -flop1 '$inputPath'")
 
-        assertEquals(inputPath, preset.inputFrom(sourceIntent)?.inputPath)
+        assertEquals(inputPath, preset.inputFrom(sourceIntent)?.inputPath?.raw)
     }
 
     @Test
@@ -174,8 +174,8 @@ class PresetBridgeTest {
                 sourceIntent = sourceIntent,
                 targetComponent = requireNotNull(PresetBridges.flycast.targetComponent),
                 targetAction = sourceIntent.action,
-                inputPath = inputPath,
-                selectedEntry = selectedEntry,
+                inputPath = BridgeInputPath(inputPath),
+                selectedEntry = SelectedEntryPath(selectedEntry),
             )
 
         assertEquals(Intent.ACTION_VIEW, targetIntent.action)

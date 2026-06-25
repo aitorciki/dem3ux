@@ -16,19 +16,20 @@ class BridgeOrchestrator(
         targetLauncher: TargetLauncher,
     ): BridgeOutcome {
         val inputPath = bridgeLaunch.inputPath
-        val isPlaylist = BridgeInputType.isPlaylist(inputPath)
+        val isPlaylist = inputPath.isPlaylist()
 
         val selectedEntry =
             if (isPlaylist) {
-                when (val playlistContentResult = playlistContentReader.read(inputPath)) {
+                when (val playlistContentResult = playlistContentReader.read(inputPath.raw)) {
                     is PlaylistContentResult.Success -> {
                         runCatching {
                             playlistRepository
-                                .recordSeenPlaylist(sourcePath = inputPath, content = playlistContentResult.content)
+                                .recordSeenPlaylist(sourcePath = inputPath.raw, content = playlistContentResult.content)
                         }.onFailure { error ->
                             logger("Failed to record playlist", error)
                         }.getOrNull()
                             ?.selectedEntryPath
+                            ?.let(::SelectedEntryPath)
                     }
 
                     is PlaylistContentResult.NeedsPermission -> {
@@ -40,18 +41,20 @@ class BridgeOrchestrator(
                     }
                 }
             } else {
-                inputPath
+                SelectedEntryPath(inputPath.raw)
             }
 
-        if (selectedEntry.isNullOrBlank()) {
+        if (selectedEntry == null || selectedEntry.raw.isBlank()) {
             return BridgeOutcome.Failed("Finishing bridge launch because no selected entry was resolved")
         }
 
-        if (selectedEntry.requiresFolderAccessForForwarding()) {
+        val persistedTreeUris = persistedTreeUrisProvider.persistedReadableTreeUris()
+
+        if (selectedEntry.requiresFolderAccessForForwarding(persistedTreeUris)) {
             return BridgeOutcome.NeedsFolderAccess(bridgeLaunch)
         }
 
-        val grantableSelectedEntry = selectedEntry.mapContentUriThroughPersistedTreeGrant()
+        val grantableSelectedEntry = selectedEntry.mapContentUriThroughPersistedTreeGrant(persistedTreeUris)
 
         return launchTargetEmulator(
             sourceIntent = sourceIntent,
@@ -65,8 +68,8 @@ class BridgeOrchestrator(
     private suspend fun launchTargetEmulator(
         sourceIntent: Intent,
         bridgeLaunch: BridgeLaunch,
-        inputPath: String,
-        selectedEntry: String,
+        inputPath: BridgeInputPath,
+        selectedEntry: SelectedEntryPath,
         targetLauncher: TargetLauncher,
     ): BridgeOutcome {
         var lastActivityNotFound: ActivityNotFoundException? = null
@@ -91,24 +94,4 @@ class BridgeOrchestrator(
 
         return BridgeOutcome.Failed("Failed to launch target emulator.", lastActivityNotFound)
     }
-
-    private fun String.requiresFolderAccessForForwarding(): Boolean =
-        ExternalStorageUriMapper.documentId(this) != null &&
-            !ExternalStorageUriMapper.hasPersistedTreeGrant(
-                uriString = this,
-                persistedTreeUris = persistedTreeUrisProvider.persistedReadableTreeUris(),
-            )
-
-    private fun String.mapContentUriThroughPersistedTreeGrant(): String =
-        if (ExternalStorageUriMapper.documentId(this) != null) {
-            mapThroughPersistedTreeGrant()
-        } else {
-            this
-        }
-
-    private fun String.mapThroughPersistedTreeGrant(): String =
-        ExternalStorageUriMapper.mapToPersistedTreeUri(
-            uriString = this,
-            persistedTreeUris = persistedTreeUrisProvider.persistedReadableTreeUris(),
-        ) ?: this
 }

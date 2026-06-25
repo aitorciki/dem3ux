@@ -3,6 +3,7 @@ package net.aitorciki.dem3ux
 import android.content.ComponentName
 import android.content.Intent
 import net.aitorciki.dem3ux.bridge.BridgeContract
+import net.aitorciki.dem3ux.bridge.BridgeInputPath
 import net.aitorciki.dem3ux.bridge.BridgeLaunch
 
 class BridgeActivity : BaseBridgeActivity() {
@@ -16,7 +17,7 @@ class BridgeActivity : BaseBridgeActivity() {
         }
 
         return BridgeLaunch(
-            inputPath = inputPath,
+            inputPath = BridgeInputPath(inputPath),
             targetComponents = listOf(targetComponent),
             targetAction = sourceIntent.action,
         )

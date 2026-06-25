@@ -36,8 +36,8 @@ class BridgeTargetIntentFactoryTest {
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
                 targetAction = sourceIntent.action,
-                inputPath = inputPath,
-                selectedEntry = selectedEntry,
+                inputPath = BridgeInputPath(inputPath),
+                selectedEntry = SelectedEntryPath(selectedEntry),
             )
 
         assertEquals(Intent.ACTION_VIEW, targetIntent.action)
@@ -62,8 +62,8 @@ class BridgeTargetIntentFactoryTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
-                inputPath = inputPath,
-                selectedEntry = selectedEntry,
+                inputPath = BridgeInputPath(inputPath),
+                selectedEntry = SelectedEntryPath(selectedEntry),
             )
 
         assertEquals(selectedEntry, targetIntent.data.toString())
@@ -78,8 +78,8 @@ class BridgeTargetIntentFactoryTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
-                inputPath = "/storage/emulated/0/roms/psx/Game.m3u",
-                selectedEntry = selectedEntry,
+                inputPath = BridgeInputPath("/storage/emulated/0/roms/psx/Game.m3u"),
+                selectedEntry = SelectedEntryPath(selectedEntry),
             )
 
         assertEquals("cpc6128", targetIntent.data.toString())
@@ -93,8 +93,8 @@ class BridgeTargetIntentFactoryTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
-                inputPath = "/storage/emulated/0/roms/psx/Game.m3u",
-                selectedEntry = "/storage/emulated/0/roms/psx/Disc 1.chd",
+                inputPath = BridgeInputPath("/storage/emulated/0/roms/psx/Game.m3u"),
+                selectedEntry = SelectedEntryPath("/storage/emulated/0/roms/psx/Disc 1.chd"),
             )
 
         assertNull(targetIntent.data)
@@ -111,8 +111,8 @@ class BridgeTargetIntentFactoryTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
-                inputPath = inputPath,
-                selectedEntry = inputPath,
+                inputPath = BridgeInputPath(inputPath),
+                selectedEntry = SelectedEntryPath(inputPath),
             )
 
         assertEquals(inputPath, targetIntent.getStringExtra("bootPath"))
@@ -131,8 +131,8 @@ class BridgeTargetIntentFactoryTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
-                inputPath = inputPath,
-                selectedEntry = inputPath,
+                inputPath = BridgeInputPath(inputPath),
+                selectedEntry = SelectedEntryPath(inputPath),
             )
 
         assertEquals(Intent.FLAG_ACTIVITY_NO_HISTORY, targetIntent.flags and Intent.FLAG_ACTIVITY_NO_HISTORY)
@@ -151,8 +151,8 @@ class BridgeTargetIntentFactoryTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
-                inputPath = "/storage/emulated/0/roms/psx/Game.m3u",
-                selectedEntry = "/storage/emulated/0/roms/psx/Disc 1.chd",
+                inputPath = BridgeInputPath("/storage/emulated/0/roms/psx/Game.m3u"),
+                selectedEntry = SelectedEntryPath("/storage/emulated/0/roms/psx/Disc 1.chd"),
             )
 
         assertFalse(targetIntent.hasExtra(BridgeContract.EXTRA_TARGET_ACTIVITY))
@@ -170,8 +170,8 @@ class BridgeTargetIntentFactoryTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
-                inputPath = inputPath,
-                selectedEntry = selectedEntry,
+                inputPath = BridgeInputPath(inputPath),
+                selectedEntry = SelectedEntryPath(selectedEntry),
             )
 
         assertArrayEquals(arrayOf("--boot", selectedEntry), targetIntent.getStringArrayExtra("paths"))
@@ -187,8 +187,8 @@ class BridgeTargetIntentFactoryTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
-                inputPath = "/storage/emulated/0/roms/psx/Game.m3u",
-                selectedEntry = selectedEntry,
+                inputPath = BridgeInputPath("/storage/emulated/0/roms/psx/Game.m3u"),
+                selectedEntry = SelectedEntryPath(selectedEntry),
             )
 
         assertEquals(0, targetIntent.flags and Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -205,8 +205,8 @@ class BridgeTargetIntentFactoryTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
-                inputPath = "/storage/emulated/0/roms/gc/Game.m3u",
-                selectedEntry = selectedEntry,
+                inputPath = BridgeInputPath("/storage/emulated/0/roms/gc/Game.m3u"),
+                selectedEntry = SelectedEntryPath(selectedEntry),
             )
 
         assertEquals(setOf(Intent.CATEGORY_LEANBACK_LAUNCHER), targetIntent.categories)
@@ -226,8 +226,8 @@ class BridgeTargetIntentFactoryTest {
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
                 targetAction = sourceIntent.action,
-                inputPath = inputPath,
-                selectedEntry = selectedEntry,
+                inputPath = BridgeInputPath(inputPath),
+                selectedEntry = SelectedEntryPath(selectedEntry),
                 embeddedExtraReplacement =
                     EmbeddedExtraPattern(
                         key = "cli_params",
@@ -256,8 +256,8 @@ class BridgeTargetIntentFactoryTest {
             BridgeTargetIntentFactory.build(
                 sourceIntent = sourceIntent,
                 targetComponent = targetComponent,
-                inputPath = inputPath,
-                selectedEntry = selectedEntry,
+                inputPath = BridgeInputPath(inputPath),
+                selectedEntry = SelectedEntryPath(selectedEntry),
             )
 
         assertEquals(42000L, targetIntent.getLongExtra("elapsed", -1L))

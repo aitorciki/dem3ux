@@ -11,7 +11,7 @@ class PresetBridgeActivity : BaseBridgeActivity() {
         val input = preset.inputFrom(sourceIntent)
         val targetComponents = preset.targetComponents
 
-        if (targetComponents.isEmpty() || input == null || input.inputPath.isBlank()) {
+        if (targetComponents.isEmpty() || input == null || input.inputPath.raw.isBlank()) {
             return null
         }
 

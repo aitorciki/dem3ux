@@ -24,31 +24,31 @@ data class PresetBridge(
     fun inputFrom(sourceIntent: Intent): PresetBridgeInput? =
         when {
             inputExtraKey != null -> {
-                sourceIntent.getStringExtra(inputExtraKey)?.let { inputPath -> PresetBridgeInput(inputPath = inputPath) }
+                sourceIntent.getStringExtra(inputExtraKey)?.let { inputPath -> PresetBridgeInput(inputPath = BridgeInputPath(inputPath)) }
             }
 
             inputExtraPatterns.isNotEmpty() -> {
                 inputExtraPatterns.firstNotNullOfOrNull { pattern ->
                     val extraValue = sourceIntent.getStringExtra(pattern.key) ?: return@firstNotNullOfOrNull null
                     pattern.extractInputPath(extraValue)?.let { inputPath ->
-                        PresetBridgeInput(inputPath = inputPath, embeddedExtraReplacement = pattern)
+                        PresetBridgeInput(inputPath = BridgeInputPath(inputPath), embeddedExtraReplacement = pattern)
                     }
                 }
             }
 
             else -> {
-                sourceIntent.dataString?.let { inputPath -> PresetBridgeInput(inputPath = inputPath) }
+                sourceIntent.dataString?.let { inputPath -> PresetBridgeInput(inputPath = BridgeInputPath(inputPath)) }
             }
         }
 
-    fun inputPathFrom(sourceIntent: Intent): String? = inputFrom(sourceIntent)?.inputPath
+    fun inputPathFrom(sourceIntent: Intent): String? = inputFrom(sourceIntent)?.inputPath?.raw
 
     fun resolveTargetComponent(isTargetInstalled: (ComponentName) -> Boolean): ComponentName? =
         targetComponents.firstOrNull(isTargetInstalled)
 }
 
 data class PresetBridgeInput(
-    val inputPath: String,
+    val inputPath: BridgeInputPath,
     val embeddedExtraReplacement: EmbeddedExtraPattern? = null,
 )
 
@@ -64,10 +64,10 @@ data class EmbeddedExtraPattern(
 
     fun replaceInputPath(
         extraValue: String,
-        selectedEntry: String,
+        selectedEntry: SelectedEntryPath,
     ): String {
         val match = Regex(regex).find(extraValue) ?: return extraValue
         val groupRange = match.groups[group]?.range ?: return extraValue
-        return extraValue.replaceRange(groupRange, selectedEntry)
+        return extraValue.replaceRange(groupRange, selectedEntry.raw)
     }
 }

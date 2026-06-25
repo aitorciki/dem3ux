@@ -51,7 +51,7 @@ class BridgeOrchestratorTest {
             val sourceIntent = Intent(Intent.ACTION_VIEW).putExtra("bootPath", inputPath)
             val bridgeLaunch =
                 BridgeLaunch(
-                    inputPath = inputPath,
+                    inputPath = BridgeInputPath(inputPath),
                     targetComponents = listOf(targetComponent),
                     targetAction = Intent.ACTION_VIEW,
                 )
@@ -86,7 +86,7 @@ class BridgeOrchestratorTest {
             val sourceIntent = Intent(Intent.ACTION_VIEW).putExtra("bootPath", inputPath)
             val bridgeLaunch =
                 BridgeLaunch(
-                    inputPath = inputPath,
+                    inputPath = BridgeInputPath(inputPath),
                     targetComponents = listOf(targetComponent),
                     targetAction = Intent.ACTION_VIEW,
                 )
@@ -113,7 +113,7 @@ class BridgeOrchestratorTest {
             val sourceIntent = Intent(Intent.ACTION_VIEW).putExtra("bootPath", inputPath)
             val bridgeLaunch =
                 BridgeLaunch(
-                    inputPath = inputPath,
+                    inputPath = BridgeInputPath(inputPath),
                     targetComponents = listOf(targetComponent),
                     targetAction = Intent.ACTION_VIEW,
                 )
@@ -139,7 +139,7 @@ class BridgeOrchestratorTest {
             val sourceIntent = Intent(Intent.ACTION_VIEW).putExtra("bootPath", inputPath)
             val bridgeLaunch =
                 BridgeLaunch(
-                    inputPath = inputPath,
+                    inputPath = BridgeInputPath(inputPath),
                     targetComponents = listOf(targetComponent),
                     targetAction = Intent.ACTION_VIEW,
                 )
@@ -173,7 +173,7 @@ class BridgeOrchestratorTest {
             val sourceIntent = Intent(Intent.ACTION_VIEW).putExtra("bootPath", inputPath)
             val bridgeLaunch =
                 BridgeLaunch(
-                    inputPath = inputPath,
+                    inputPath = BridgeInputPath(inputPath),
                     targetComponents = listOf(targetComponent),
                     targetAction = Intent.ACTION_VIEW,
                 )
@@ -205,7 +205,7 @@ class BridgeOrchestratorTest {
             val sourceIntent = Intent(Intent.ACTION_VIEW).putExtra("bootPath", inputPath)
             val bridgeLaunch =
                 BridgeLaunch(
-                    inputPath = inputPath,
+                    inputPath = BridgeInputPath(inputPath),
                     targetComponents = listOf(targetComponent),
                     targetAction = Intent.ACTION_VIEW,
                 )
@@ -222,6 +222,9 @@ class BridgeOrchestratorTest {
             val inputPath = "/storage/emulated/0/roms/psx/Game.m3u"
             val selectedEntry = "content://com.android.externalstorage.documents/document/primary%3Aroms%2Fpsx%2FDisc%201.chd"
             val treeUri = "content://com.android.externalstorage.documents/tree/primary%3Aroms"
+            val mappedSelectedEntry =
+                "content://com.android.externalstorage.documents/tree/primary%3Aroms/document/" +
+                    "primary%3Aroms%2Fpsx%2FDisc%201.chd"
             val reader = FakePlaylistContentReader(content = "#EXTM3U\nDisc 1.chd")
             val repository =
                 FakePlaylistRepository(
@@ -241,7 +244,7 @@ class BridgeOrchestratorTest {
                     .putExtra("bootPath", inputPath)
             val bridgeLaunch =
                 BridgeLaunch(
-                    inputPath = inputPath,
+                    inputPath = BridgeInputPath(inputPath),
                     targetComponents = listOf(targetComponent),
                     targetAction = Intent.ACTION_VIEW,
                 )
@@ -250,12 +253,8 @@ class BridgeOrchestratorTest {
 
             assertEquals(BridgeOutcome.Launched, outcome)
             assertEquals(1, recorder.launches.size)
-            assertTrue(
-                recorder.launches
-                    .single()
-                    .dataString!!
-                    .startsWith("content://com.android.externalstorage.documents/tree/"),
-            )
+            assertEquals(mappedSelectedEntry, recorder.launches.single().dataString)
+            assertEquals(mappedSelectedEntry, recorder.launches.single().getStringExtra("bootPath"))
         }
 
     @Test
@@ -278,7 +277,7 @@ class BridgeOrchestratorTest {
             val sourceIntent = Intent(Intent.ACTION_VIEW).putExtra("bootPath", inputPath)
             val bridgeLaunch =
                 BridgeLaunch(
-                    inputPath = inputPath,
+                    inputPath = BridgeInputPath(inputPath),
                     targetComponents = listOf(targetComponent, alternateComponent),
                     targetAction = Intent.ACTION_VIEW,
                 )
@@ -310,7 +309,7 @@ class BridgeOrchestratorTest {
             val sourceIntent = Intent(Intent.ACTION_VIEW).putExtra("bootPath", inputPath)
             val bridgeLaunch =
                 BridgeLaunch(
-                    inputPath = inputPath,
+                    inputPath = BridgeInputPath(inputPath),
                     targetComponents = listOf(targetComponent, alternateComponent),
                     targetAction = Intent.ACTION_VIEW,
                 )
@@ -337,7 +336,7 @@ class BridgeOrchestratorTest {
             val sourceIntent = Intent(Intent.ACTION_VIEW).putExtra("bootPath", inputPath)
             val bridgeLaunch =
                 BridgeLaunch(
-                    inputPath = inputPath,
+                    inputPath = BridgeInputPath(inputPath),
                     targetComponents = listOf(targetComponent),
                     targetAction = Intent.ACTION_VIEW,
                 )
