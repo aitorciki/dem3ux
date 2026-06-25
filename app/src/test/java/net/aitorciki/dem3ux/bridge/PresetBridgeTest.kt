@@ -183,6 +183,11 @@ class PresetBridgeTest {
         assertEquals(selectedEntry, targetIntent.data.toString())
     }
 
+    @Test
+    fun `unknown preset alias resolves to null`() {
+        assertNull(PresetBridges.fromAliasClassName("net.aitorciki.dem3ux.presets.UnknownBridgeActivity"))
+    }
+
     private fun mame4DroidPreset(): PresetBridge =
         PresetBridge(
             id = "mame4droid-current",
