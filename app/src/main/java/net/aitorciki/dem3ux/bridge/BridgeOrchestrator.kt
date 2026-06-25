@@ -20,21 +20,24 @@ class BridgeOrchestrator(
 
         val selectedEntry =
             if (isPlaylist) {
-                val playlistContentResult = playlistContentReader.read(inputPath)
-                if (playlistContentResult.securityException != null) {
-                    return BridgeOutcome.NeedsFolderAccess(bridgeLaunch)
-                }
+                when (val playlistContentResult = playlistContentReader.read(inputPath)) {
+                    is PlaylistContentResult.Success -> {
+                        runCatching {
+                            playlistRepository
+                                .recordSeenPlaylist(sourcePath = inputPath, content = playlistContentResult.content)
+                        }.onFailure { error ->
+                            logger("Failed to record playlist", error)
+                        }.getOrNull()
+                            ?.selectedEntryPath
+                    }
 
-                val playlistContent = playlistContentResult.content
+                    is PlaylistContentResult.NeedsPermission -> {
+                        return BridgeOutcome.NeedsFolderAccess(bridgeLaunch)
+                    }
 
-                playlistContent?.let { content ->
-                    runCatching {
-                        playlistRepository
-                            .recordSeenPlaylist(sourcePath = inputPath, content = content)
-                    }.onFailure { error ->
-                        logger("Failed to record playlist", error)
-                    }.getOrNull()
-                        ?.selectedEntryPath
+                    is PlaylistContentResult.Failed -> {
+                        return BridgeOutcome.Failed("Failed to read playlist content", playlistContentResult.error)
+                    }
                 }
             } else {
                 inputPath

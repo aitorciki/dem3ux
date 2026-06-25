@@ -127,6 +127,33 @@ class BridgeOrchestratorTest {
         }
 
     @Test
+    fun `non-permission failure while reading playlist returns failure`() =
+        runTest {
+            val inputPath = "/storage/emulated/0/roms/psx/Game.m3u"
+            val reader = FakePlaylistContentReader(error = IllegalStateException("broken reader"))
+            val repository = FakePlaylistRepository()
+            val trees = FakePersistedTreeUrisProvider(emptyList())
+            val recorder = RecordingTargetLauncher()
+            val orchestrator = newOrchestrator(reader, repository, trees)
+
+            val sourceIntent = Intent(Intent.ACTION_VIEW).putExtra("bootPath", inputPath)
+            val bridgeLaunch =
+                BridgeLaunch(
+                    inputPath = inputPath,
+                    targetComponents = listOf(targetComponent),
+                    targetAction = Intent.ACTION_VIEW,
+                )
+
+            val outcome = orchestrator.runBridge(sourceIntent, bridgeLaunch, recorder)
+
+            assertTrue(outcome is BridgeOutcome.Failed)
+            assertEquals("Failed to read playlist content", (outcome as BridgeOutcome.Failed).message)
+            assertTrue(outcome.error is IllegalStateException)
+            assertTrue(repository.recordSeenPlaylistCalls.isEmpty())
+            assertTrue(recorder.launches.isEmpty())
+        }
+
+    @Test
     fun `blank selected entry from repository finishes with failure`() =
         runTest {
             val inputPath = "/storage/emulated/0/roms/psx/Empty.m3u"
@@ -324,9 +351,15 @@ class BridgeOrchestratorTest {
 private class FakePlaylistContentReader(
     val content: String? = null,
     val securityException: SecurityException? = null,
+    val error: Throwable? = null,
 ) : PlaylistContentReader {
     override suspend fun read(inputPath: String): PlaylistContentResult =
-        PlaylistContentResult(content = content, securityException = securityException)
+        when {
+            securityException != null -> PlaylistContentResult.NeedsPermission(securityException)
+            error != null -> PlaylistContentResult.Failed(error)
+            content != null -> PlaylistContentResult.Success(content)
+            else -> PlaylistContentResult.Failed(IllegalStateException("No fake playlist content configured"))
+        }
 }
 
 private class FakePlaylistRepository(

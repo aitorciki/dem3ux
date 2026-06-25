@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import net.aitorciki.dem3ux.R
 import net.aitorciki.dem3ux.bridge.PlaylistContentReader
+import net.aitorciki.dem3ux.bridge.PlaylistContentResult
 import net.aitorciki.dem3ux.bridge.PresetBridge
 import net.aitorciki.dem3ux.bridge.PresetBridges
 import net.aitorciki.dem3ux.data.PlaylistRepository
@@ -102,15 +103,19 @@ class Dem3uxViewModel(
                     application.contentResolver
                         .takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
 
-                    val readResult = playlistContentReader.read(uri.toString())
-                    val content = readResult.content
-                    if (readResult.securityException != null || content == null) {
-                        null
-                    } else {
-                        repository.recordSeenPlaylist(
-                            sourcePath = uri.toString(),
-                            content = content,
-                        )
+                    when (val readResult = playlistContentReader.read(uri.toString())) {
+                        is PlaylistContentResult.Success -> {
+                            repository.recordSeenPlaylist(
+                                sourcePath = uri.toString(),
+                                content = readResult.content,
+                            )
+                        }
+
+                        is PlaylistContentResult.NeedsPermission,
+                        is PlaylistContentResult.Failed,
+                        -> {
+                            null
+                        }
                     }
                 }
 

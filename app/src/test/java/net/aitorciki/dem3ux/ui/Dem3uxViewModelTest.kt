@@ -280,9 +280,15 @@ private data class RecordSeenPlaylistCall(
 private class FakePlaylistContentReader : PlaylistContentReader {
     var content: String? = null
     var securityException: SecurityException? = null
+    var error: Throwable? = null
 
     override suspend fun read(inputPath: String): PlaylistContentResult =
-        PlaylistContentResult(content = content, securityException = securityException)
+        when {
+            securityException != null -> PlaylistContentResult.NeedsPermission(securityException!!)
+            error != null -> PlaylistContentResult.Failed(error!!)
+            content != null -> PlaylistContentResult.Success(content!!)
+            else -> PlaylistContentResult.Failed(IllegalStateException("No fake playlist content configured"))
+        }
 }
 
 private data class SelectEntryCall(

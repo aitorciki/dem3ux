@@ -43,10 +43,19 @@ class AndroidPlaylistContentReader(
                 }
 
             result.fold(
-                onSuccess = { content -> PlaylistContentResult(content = content) },
+                onSuccess = { content ->
+                    if (content == null) {
+                        PlaylistContentResult.Failed(FileNotFoundException("Could not open playlist content: $inputPath"))
+                    } else {
+                        PlaylistContentResult.Success(content)
+                    }
+                },
                 onFailure = { error ->
                     logger("Failed to read playlist content", error)
-                    PlaylistContentResult(securityException = error.asPermissionException())
+                    error
+                        .asPermissionException()
+                        ?.let(PlaylistContentResult::NeedsPermission)
+                        ?: PlaylistContentResult.Failed(error)
                 },
             )
         }
