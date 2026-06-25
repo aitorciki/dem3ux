@@ -12,7 +12,12 @@ data class PresetBridge(
     val inputExtraPatterns: List<EmbeddedExtraPattern> = emptyList(),
     val esDeEmulatorName: String? = null,
 ) {
-    val targetComponents: List<ComponentName> = targetActivities.mapNotNull(ComponentName::unflattenFromString)
+    val targetComponents: List<ComponentName> =
+        targetActivities.map { targetActivity ->
+            requireNotNull(ComponentName.unflattenFromString(targetActivity)) {
+                "Invalid preset target activity: $targetActivity"
+            }
+        }
     val targetComponent: ComponentName? = targetComponents.firstOrNull()
     val esDeAliasEntry: String = "net.aitorciki.dem3ux/${aliasClassName.removePrefix("net.aitorciki.dem3ux")}"
 

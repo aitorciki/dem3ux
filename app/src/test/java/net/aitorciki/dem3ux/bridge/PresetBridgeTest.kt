@@ -1,10 +1,10 @@
 package net.aitorciki.dem3ux.bridge
 
-import android.content.ComponentName
 import android.content.Intent
 import androidx.core.net.toUri
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -107,19 +107,33 @@ class PresetBridgeTest {
     }
 
     @Test
-    fun `preset ignores invalid target candidate entries`() {
+    fun `preset rejects invalid target candidate entries`() {
+        val error =
+            assertThrows(IllegalArgumentException::class.java) {
+                PresetBridge(
+                    id = "test",
+                    aliasClassName = "net.aitorciki.dem3ux.presets.TestBridgeActivity",
+                    targetActivities =
+                        listOf(
+                            "not-a-flattened-component",
+                            "com.example/.TargetActivity",
+                        ),
+                ).targetComponents
+            }
+
+        assertEquals("Invalid preset target activity: not-a-flattened-component", error.message)
+    }
+
+    @Test
+    fun `preset maps valid target candidate entries`() {
         val preset =
             PresetBridge(
                 id = "test",
                 aliasClassName = "net.aitorciki.dem3ux.presets.TestBridgeActivity",
-                targetActivities =
-                    listOf(
-                        "not-a-flattened-component",
-                        "com.example/.TargetActivity",
-                    ),
+                targetActivities = listOf("com.example/.TargetActivity"),
             )
 
-        assertEquals(ComponentName("com.example", "com.example.TargetActivity"), preset.targetComponent)
+        assertEquals("com.example.TargetActivity", preset.targetComponent?.className)
     }
 
     @Test

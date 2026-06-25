@@ -36,6 +36,7 @@ abstract class GenerateBridgePresetsTask : DefaultTask() {
     @TaskAction
     fun generate() {
         val catalog = catalogFile.get().asFile.readBridgePresetCatalog()
+        catalog.validateOrThrow()
         val output = outputFile.get().asFile
         output.parentFile.mkdirs()
         output.writeText(catalog.generatedPresetBridgesSource().toString())
@@ -53,6 +54,7 @@ abstract class GenerateBridgePresetManifestTask : DefaultTask() {
     @TaskAction
     fun generate() {
         val catalog = catalogFile.get().asFile.readBridgePresetCatalog()
+        catalog.validateOrThrow()
         val output = manifestFile.get().asFile
         output.parentFile.mkdirs()
         output.writeText(catalog.generatedPresetManifestXml())
@@ -75,6 +77,7 @@ abstract class ValidateBridgePresetAliasesTask : DefaultTask() {
     @TaskAction
     fun validate() {
         val catalog = catalogFile.get().asFile.readBridgePresetCatalog()
+        catalog.validateOrThrow()
         val expectedAliases =
             catalog
                 .sorted()
@@ -221,9 +224,207 @@ internal fun java.io.File.readBridgePresetCatalog(): BridgePresetCatalog =
     bridgePresetJson.decodeFromString<BridgePresetCatalog>(readText())
 
 internal fun BridgePresetCatalog.writeTo(file: java.io.File) {
+    validateOrThrow()
     file.parentFile.mkdirs()
     file.writeText(bridgePresetJson.encodeToString(BridgePresetCatalog.serializer(), sorted()).plus("\n"))
 }
+
+internal fun BridgePresetCatalog.validateOrThrow() {
+    val errors = validationErrors()
+    if (errors.isNotEmpty()) {
+        throw GradleException(
+            buildString {
+                appendLine("Bridge preset catalog validation failed.")
+                errors.forEach { error -> appendLine("- $error") }
+            },
+        )
+    }
+}
+
+internal fun BridgePresetCatalog.validationErrors(): List<String> =
+    buildList {
+        if (presets.isEmpty()) {
+            add("Catalog must contain at least one preset.")
+        }
+
+        addDuplicateErrors(
+            label = "preset id",
+            values = presets.map { preset -> preset.id },
+        )
+        addDuplicateErrors(
+            label = "alias class name",
+            values = presets.map { preset -> preset.aliasClassName },
+        )
+        addDuplicateErrors(
+            label = "ES-DE emulator name",
+            values = presets.mapNotNull { preset -> preset.integrations?.esDe?.emulator },
+        )
+
+        if (presets != presets.sortedBy { preset -> preset.id }) {
+            add("presets/bridge-presets.json must be sorted by preset id.")
+        }
+
+        presets.forEach { preset -> addAll(preset.validationErrors()) }
+    }
+
+private fun MutableList<String>.addDuplicateErrors(
+    label: String,
+    values: List<String>,
+) {
+    values
+        .groupingBy { value -> value }
+        .eachCount()
+        .filterValues { count -> count > 1 }
+        .keys
+        .sorted()
+        .forEach { value -> add("Duplicate $label: $value") }
+}
+
+private fun BridgePresetCatalogEntry.validationErrors(): List<String> =
+    buildList {
+        val prefix = "Preset '$id'"
+
+        if (id.isBlank()) {
+            add("Preset id must not be blank.")
+        } else if (!id.matches(PRESET_ID_REGEX)) {
+            add("$prefix id must match ${PRESET_ID_REGEX.pattern}.")
+        }
+
+        if (displayName.isBlank()) {
+            add("$prefix displayName must not be blank.")
+        }
+
+        if (aliasClassName.isBlank()) {
+            add("$prefix aliasClassName must not be blank.")
+        } else {
+            if (!aliasClassName.startsWith(PRESET_ALIAS_PACKAGE_PREFIX)) {
+                add("$prefix aliasClassName must start with $PRESET_ALIAS_PACKAGE_PREFIX.")
+            }
+            if (!aliasClassName.endsWith(PRESET_ALIAS_SUFFIX)) {
+                add("$prefix aliasClassName must end with $PRESET_ALIAS_SUFFIX.")
+            }
+        }
+
+        if (targetActivities.isEmpty()) {
+            add("$prefix targetActivities must not be empty.")
+        }
+        targetActivities.forEach { targetActivity ->
+            if (!targetActivity.isValidFlattenedComponent()) {
+                add("$prefix target activity is not a valid flattened component: $targetActivity")
+            }
+        }
+
+        status?.let { value ->
+            if (value !in ALLOWED_PRESET_STATUSES) {
+                add("$prefix status must be one of ${ALLOWED_PRESET_STATUSES.sorted().joinToString()}.")
+            }
+        }
+
+        integrations?.esDe?.emulator?.let { emulator ->
+            if (emulator.isBlank()) {
+                add("$prefix ES-DE emulator name must not be blank.")
+            }
+        }
+
+        addAll(input.validationErrors(prefix))
+    }
+
+private fun BridgePresetInput.validationErrors(prefix: String): List<String> =
+    buildList {
+        when (type) {
+            INPUT_TYPE_DATA -> {
+                if (key != null) {
+                    add("$prefix data input must not define key.")
+                }
+                if (patterns != null) {
+                    add("$prefix data input must not define patterns.")
+                }
+            }
+
+            INPUT_TYPE_EXTRA -> {
+                if (key.isNullOrBlank()) {
+                    add("$prefix extra input must define a non-blank key.")
+                }
+                if (patterns != null) {
+                    add("$prefix extra input must not define patterns.")
+                }
+            }
+
+            INPUT_TYPE_EXTRA_PATTERN -> {
+                if (key.isNullOrBlank()) {
+                    add("$prefix extraPattern input must define a non-blank key.")
+                }
+                if (patterns.isNullOrEmpty()) {
+                    add("$prefix extraPattern input must define at least one pattern.")
+                }
+                patterns.orEmpty().forEachIndexed { index, pattern ->
+                    addAll(pattern.validationErrors(prefix = prefix, index = index))
+                }
+            }
+
+            else -> {
+                add("$prefix input type must be one of ${ALLOWED_INPUT_TYPES.sorted().joinToString()}.")
+            }
+        }
+    }
+
+private fun BridgePresetInputPattern.validationErrors(
+    prefix: String,
+    index: Int,
+): List<String> =
+    buildList {
+        val patternPrefix = "$prefix input pattern #${index + 1}"
+        if (regex.isBlank()) {
+            add("$patternPrefix regex must not be blank.")
+            return@buildList
+        }
+        if (group < 1) {
+            add("$patternPrefix group must be >= 1.")
+        }
+
+        val compiledPattern =
+            runCatching { Regex(regex).toPattern() }
+                .onFailure { error -> add("$patternPrefix regex is invalid: ${error.message}") }
+                .getOrNull()
+
+        val groupCount = compiledPattern?.matcher("")?.groupCount()
+        if (groupCount != null && group > groupCount) {
+            add("$patternPrefix group $group exceeds regex capture group count $groupCount.")
+        }
+    }
+
+private fun String.isValidFlattenedComponent(): Boolean {
+    val separatorIndex = indexOf('/')
+    if (separatorIndex <= 0 || separatorIndex != lastIndexOf('/') || separatorIndex == lastIndex) {
+        return false
+    }
+
+    val packageName = substring(0, separatorIndex)
+    val className = substring(separatorIndex + 1)
+    return packageName.isValidJavaPackageName() && className.isValidAndroidClassName()
+}
+
+private fun String.isValidJavaPackageName(): Boolean = split('.').all { segment -> segment.isValidJavaIdentifier() }
+
+private fun String.isValidAndroidClassName(): Boolean =
+    when {
+        startsWith(".") -> drop(1).isValidRelativeClassName()
+        else -> isValidRelativeClassName()
+    }
+
+private fun String.isValidRelativeClassName(): Boolean = split('.').all { segment -> segment.isValidJavaIdentifier() }
+
+private fun String.isValidJavaIdentifier(): Boolean =
+    isNotEmpty() && first().isJavaIdentifierStart() && drop(1).all { character -> character.isJavaIdentifierPart() }
+
+private val PRESET_ID_REGEX = Regex("[a-z0-9]+(?:-[a-z0-9]+)*")
+private const val PRESET_ALIAS_PACKAGE_PREFIX = "net.aitorciki.dem3ux.presets."
+private const val PRESET_ALIAS_SUFFIX = "BridgeActivity"
+private const val INPUT_TYPE_DATA = "data"
+private const val INPUT_TYPE_EXTRA = "extra"
+private const val INPUT_TYPE_EXTRA_PATTERN = "extraPattern"
+private val ALLOWED_INPUT_TYPES = setOf(INPUT_TYPE_DATA, INPUT_TYPE_EXTRA, INPUT_TYPE_EXTRA_PATTERN)
+private val ALLOWED_PRESET_STATUSES = setOf("generated", "validated")
 
 private fun BridgePresetCatalog.sorted(): BridgePresetCatalog = copy(presets = presets.sortedBy { preset -> preset.id })
 

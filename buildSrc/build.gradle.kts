@@ -13,6 +13,8 @@ dependencies {
     implementation("com.squareup:kotlinpoet:2.3.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0")
     implementation("io.github.pdvrieze.xmlutil:serialization:1.0.0-rc3")
+
+    testImplementation(kotlin("test"))
 }
 
 spotless {
@@ -29,6 +31,6 @@ spotless {
 
 tasks.register("verify") {
     group = "verification"
-    description = "Runs formatting checks."
-    dependsOn("spotlessCheck")
+    description = "Runs formatting checks and unit tests."
+    dependsOn("spotlessCheck", "test")
 }
