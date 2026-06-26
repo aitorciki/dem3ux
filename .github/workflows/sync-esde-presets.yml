@@ -77,9 +77,9 @@ jobs:
         if: steps.sync_changes.outputs.changed == 'true'
         run: ./gradlew verify
 
-      - name: Verify buildSrc formatting
+      - name: Verify generated presets
         if: steps.sync_changes.outputs.changed == 'true'
-        run: ./gradlew -p buildSrc spotlessCheck
+        run: ./gradlew :buildSrc:verify
 
       - name: Create or update preset sync pull request
         if: steps.sync_changes.outputs.changed == 'true'
