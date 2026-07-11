@@ -6,10 +6,12 @@ import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
+import org.gradle.api.tasks.UntrackedTask
 import org.w3c.dom.Element
 import java.net.URI
 import javax.xml.parsers.DocumentBuilderFactory
 
+@UntrackedTask(because = "Fetches remote ES-DE metadata whose content is not represented by Gradle inputs.")
 abstract class RefreshBridgePresetsFromEsDeTask : DefaultTask() {
     @get:Input
     abstract val esSystemsUrl: Property<String>
