@@ -25,6 +25,7 @@ internal object PresetBridges {
             aliasClassName = "net.aitorciki.dem3ux.presets.Armsx2BridgeActivity",
             targetActivities =
                 listOf(
+                    "com.armsx2/.MainActivity",
                     "come.nanodata.armsx2/kr.co.iefriends.pcsx2.MainActivity",
                     "come.nanodata.armsx2.debug/kr.co.iefriends.pcsx2.MainActivity",
                 ),
