@@ -1,24 +1,6 @@
 {
     "presets": [
         {
-            "id": "aethersx2",
-            "displayName": "Aethersx2",
-            "aliasClassName": "net.aitorciki.dem3ux.presets.Aethersx2BridgeActivity",
-            "targetActivities": [
-                "xyz.aethersx2.android/.EmulationActivity"
-            ],
-            "input": {
-                "type": "extra",
-                "key": "bootPath"
-            },
-            "integrations": {
-                "esDe": {
-                    "emulator": "AETHERSX2"
-                }
-            },
-            "status": "generated"
-        },
-        {
             "id": "armsx2",
             "displayName": "Armsx2",
             "aliasClassName": "net.aitorciki.dem3ux.presets.Armsx2BridgeActivity",
@@ -322,6 +304,60 @@
             "integrations": {
                 "esDe": {
                     "emulator": "MSX-EMU"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "nethersx2",
+            "displayName": "Nethersx2",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.Nethersx2BridgeActivity",
+            "targetActivities": [
+                "xyz.aethersx2.android/.EmulationActivity"
+            ],
+            "input": {
+                "type": "extra",
+                "key": "bootPath"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "NETHERSX2"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "nethersx2-turnip",
+            "displayName": "Nethersx2 Turnip",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.Nethersx2TurnipBridgeActivity",
+            "targetActivities": [
+                "xyz.aethersx2.tturnip/xyz.aethersx2.android.EmulationActivity"
+            ],
+            "input": {
+                "type": "extra",
+                "key": "bootPath"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "NETHERSX2-TURNIP"
+                }
+            },
+            "status": "generated"
+        },
+        {
+            "id": "nethersx2-turnip-classic",
+            "displayName": "Nethersx2 Turnip Classic",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.Nethersx2TurnipClassicBridgeActivity",
+            "targetActivities": [
+                "xyz.aethersx2.cturnip/xyz.aethersx2.android.EmulationActivity"
+            ],
+            "input": {
+                "type": "extra",
+                "key": "bootPath"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "NETHERSX2-TURNIP-CLASSIC"
                 }
             },
             "status": "generated"

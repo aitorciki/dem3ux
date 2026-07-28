@@ -5,19 +5,6 @@ import kotlin.collections.List
 import kotlin.collections.listOf
 
 internal object PresetBridges {
-    internal val aethersx2: PresetBridge =
-        PresetBridge(
-            id = "aethersx2",
-            displayName = "Aethersx2",
-            aliasClassName = "net.aitorciki.dem3ux.presets.Aethersx2BridgeActivity",
-            targetActivities =
-                listOf(
-                    "xyz.aethersx2.android/.EmulationActivity",
-                ),
-            inputExtraKey = "bootPath",
-            esDeEmulatorName = "AETHERSX2",
-        )
-
     internal val armsx2: PresetBridge =
         PresetBridge(
             id = "armsx2",
@@ -237,6 +224,45 @@ internal object PresetBridges {
             esDeEmulatorName = "MSX-EMU",
         )
 
+    internal val nethersx2: PresetBridge =
+        PresetBridge(
+            id = "nethersx2",
+            displayName = "Nethersx2",
+            aliasClassName = "net.aitorciki.dem3ux.presets.Nethersx2BridgeActivity",
+            targetActivities =
+                listOf(
+                    "xyz.aethersx2.android/.EmulationActivity",
+                ),
+            inputExtraKey = "bootPath",
+            esDeEmulatorName = "NETHERSX2",
+        )
+
+    internal val nethersx2Turnip: PresetBridge =
+        PresetBridge(
+            id = "nethersx2-turnip",
+            displayName = "Nethersx2 Turnip",
+            aliasClassName = "net.aitorciki.dem3ux.presets.Nethersx2TurnipBridgeActivity",
+            targetActivities =
+                listOf(
+                    "xyz.aethersx2.tturnip/xyz.aethersx2.android.EmulationActivity",
+                ),
+            inputExtraKey = "bootPath",
+            esDeEmulatorName = "NETHERSX2-TURNIP",
+        )
+
+    internal val nethersx2TurnipClassic: PresetBridge =
+        PresetBridge(
+            id = "nethersx2-turnip-classic",
+            displayName = "Nethersx2 Turnip Classic",
+            aliasClassName = "net.aitorciki.dem3ux.presets.Nethersx2TurnipClassicBridgeActivity",
+            targetActivities =
+                listOf(
+                    "xyz.aethersx2.cturnip/xyz.aethersx2.android.EmulationActivity",
+                ),
+            inputExtraKey = "bootPath",
+            esDeEmulatorName = "NETHERSX2-TURNIP-CLASSIC",
+        )
+
     internal val pceEmu: PresetBridge =
         PresetBridge(
             id = "pce-emu",
@@ -315,7 +341,6 @@ internal object PresetBridges {
 
     internal val all: List<PresetBridge> =
         listOf(
-            aethersx2,
             armsx2,
             c64Emu,
             colem,
@@ -333,6 +358,9 @@ internal object PresetBridges {
             mastergear,
             mdEmu,
             msxEmu,
+            nethersx2,
+            nethersx2Turnip,
+            nethersx2TurnipClassic,
             pceEmu,
             pizzaBoySc,
             play,
@@ -343,7 +371,6 @@ internal object PresetBridges {
 
     internal fun fromAliasClassName(className: String): PresetBridge? =
         when (className) {
-            "net.aitorciki.dem3ux.presets.Aethersx2BridgeActivity" -> aethersx2
             "net.aitorciki.dem3ux.presets.Armsx2BridgeActivity" -> armsx2
             "net.aitorciki.dem3ux.presets.C64EmuBridgeActivity" -> c64Emu
             "net.aitorciki.dem3ux.presets.ColemBridgeActivity" -> colem
@@ -361,6 +388,9 @@ internal object PresetBridges {
             "net.aitorciki.dem3ux.presets.MastergearBridgeActivity" -> mastergear
             "net.aitorciki.dem3ux.presets.MdEmuBridgeActivity" -> mdEmu
             "net.aitorciki.dem3ux.presets.MsxEmuBridgeActivity" -> msxEmu
+            "net.aitorciki.dem3ux.presets.Nethersx2BridgeActivity" -> nethersx2
+            "net.aitorciki.dem3ux.presets.Nethersx2TurnipBridgeActivity" -> nethersx2Turnip
+            "net.aitorciki.dem3ux.presets.Nethersx2TurnipClassicBridgeActivity" -> nethersx2TurnipClassic
             "net.aitorciki.dem3ux.presets.PceEmuBridgeActivity" -> pceEmu
             "net.aitorciki.dem3ux.presets.PizzaBoyScBridgeActivity" -> pizzaBoySc
             "net.aitorciki.dem3ux.presets.PlayBridgeActivity" -> play
