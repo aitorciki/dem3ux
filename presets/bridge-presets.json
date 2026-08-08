@@ -1,6 +1,23 @@
 {
     "presets": [
         {
+            "id": "armsx1",
+            "displayName": "Armsx1",
+            "aliasClassName": "net.aitorciki.dem3ux.presets.Armsx1BridgeActivity",
+            "targetActivities": [
+                "com.nanodata.armsx/com.armsx2.Main"
+            ],
+            "input": {
+                "type": "data"
+            },
+            "integrations": {
+                "esDe": {
+                    "emulator": "ARMSX1"
+                }
+            },
+            "status": "generated"
+        },
+        {
             "id": "armsx2",
             "displayName": "Armsx2",
             "aliasClassName": "net.aitorciki.dem3ux.presets.Armsx2BridgeActivity",
