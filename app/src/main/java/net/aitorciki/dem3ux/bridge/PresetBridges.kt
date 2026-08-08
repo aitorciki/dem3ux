@@ -5,6 +5,18 @@ import kotlin.collections.List
 import kotlin.collections.listOf
 
 internal object PresetBridges {
+    internal val armsx1: PresetBridge =
+        PresetBridge(
+            id = "armsx1",
+            displayName = "Armsx1",
+            aliasClassName = "net.aitorciki.dem3ux.presets.Armsx1BridgeActivity",
+            targetActivities =
+                listOf(
+                    "com.nanodata.armsx/com.armsx2.Main",
+                ),
+            esDeEmulatorName = "ARMSX1",
+        )
+
     internal val armsx2: PresetBridge =
         PresetBridge(
             id = "armsx2",
@@ -341,6 +353,7 @@ internal object PresetBridges {
 
     internal val all: List<PresetBridge> =
         listOf(
+            armsx1,
             armsx2,
             c64Emu,
             colem,
@@ -371,6 +384,7 @@ internal object PresetBridges {
 
     internal fun fromAliasClassName(className: String): PresetBridge? =
         when (className) {
+            "net.aitorciki.dem3ux.presets.Armsx1BridgeActivity" -> armsx1
             "net.aitorciki.dem3ux.presets.Armsx2BridgeActivity" -> armsx2
             "net.aitorciki.dem3ux.presets.C64EmuBridgeActivity" -> c64Emu
             "net.aitorciki.dem3ux.presets.ColemBridgeActivity" -> colem
