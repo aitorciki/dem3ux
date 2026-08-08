@@ -18,7 +18,6 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       SYNC_BRANCH: automation/sync-esde-presets
-      SYNC_PR_TITLE: "[automated] Sync ES-DE bridge presets"
       FINDINGS_ISSUE_TITLE: "[automated] Review ES-DE preset discovery findings"
       DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
 
@@ -44,6 +43,55 @@ jobs:
 
       - name: Sync bridge presets from ES-DE
         run: ./gradlew :app:syncBridgePresets
+
+      - name: Summarize preset changes
+        id: preset_summary
+        run: |
+          python3 <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          catalog_path = "presets/bridge-presets.json"
+          base_catalog = subprocess.run(
+              ["git", "show", f"origin/{os.environ['DEFAULT_BRANCH']}:{catalog_path}"],
+              capture_output=True,
+              text=True,
+          )
+          previous_presets = (
+              json.loads(base_catalog.stdout).get("presets", []) if base_catalog.returncode == 0 else []
+          )
+          current_presets = json.loads(Path(catalog_path).read_text()).get("presets", [])
+          previous_by_id = {preset["id"]: preset for preset in previous_presets}
+          current_by_id = {preset["id"]: preset for preset in current_presets}
+          changed_names = [
+              (current_by_id.get(preset_id) or previous_by_id[preset_id])["displayName"]
+              .replace("\r", " ")
+              .replace("\n", " ")
+              for preset_id in sorted(set(previous_by_id) | set(current_by_id))
+              if previous_by_id.get(preset_id) != current_by_id.get(preset_id)
+          ]
+
+          names = list(dict.fromkeys(changed_names))
+          if len(names) > 3:
+              summary = f"{', '.join(names[:3])}, and {len(names) - 3} more"
+          else:
+              summary = ", ".join(names)
+          if len(summary) > 160:
+              summary = f"{summary[:157].rstrip()}..."
+
+          if summary:
+              commit_message = f"chore: sync ES-DE bridge presets ({summary})"
+              pr_title = f"[automated] Sync ES-DE bridge presets: {summary}"
+          else:
+              commit_message = "chore: sync ES-DE bridge presets"
+              pr_title = "[automated] Sync ES-DE bridge presets"
+
+          with Path(os.environ["GITHUB_OUTPUT"]).open("a") as output:
+              output.write(f"commit-message={commit_message}\n")
+              output.write(f"pr-title={pr_title}\n")
+          PY
 
       - name: Check for preset sync changes
         id: sync_changes
@@ -83,6 +131,9 @@ jobs:
 
       - name: Create or update preset sync pull request
         if: steps.sync_changes.outputs.changed == 'true'
+        env:
+          SYNC_COMMIT_MESSAGE: ${{ steps.preset_summary.outputs.commit-message }}
+          SYNC_PR_TITLE: ${{ steps.preset_summary.outputs.pr-title }}
         run: |
           cat > build/reports/sync-pr-body.md <<'EOF'
           Automated ES-DE bridge preset sync.
@@ -94,7 +145,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$SYNC_BRANCH"
           git add --all
-          git commit -m "chore: sync ES-DE bridge presets"
+          git commit -m "$SYNC_COMMIT_MESSAGE"
           git fetch origin "$SYNC_BRANCH" || true
           git push --force-with-lease origin "HEAD:$SYNC_BRANCH"
 
