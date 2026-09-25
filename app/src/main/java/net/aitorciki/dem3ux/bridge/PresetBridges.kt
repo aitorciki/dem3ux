@@ -26,6 +26,7 @@ internal object PresetBridges {
                 listOf(
                     "come.nanodata.armsx2/com.armsx2.MainActivity",
                     "com.armsx2/.MainActivity",
+                    "com.armsx2.nightly/com.armsx2.MainActivity",
                     "come.nanodata.armsx2/kr.co.iefriends.pcsx2.MainActivity",
                     "come.nanodata.armsx2.debug/kr.co.iefriends.pcsx2.MainActivity",
                 ),
